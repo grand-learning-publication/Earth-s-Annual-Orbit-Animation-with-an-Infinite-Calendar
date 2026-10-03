@@ -1,1100 +1,1541 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Earth Annual Orbital Cycle — Historical Calendar</title>
-<style>
-:root{
-  --bg:#02050a;
-  --panel:#0b111e;
-  --visual:#07101d;
-  --card:#111827;
-  --line:rgba(148,163,184,.20);
-  --text:#e5e7eb;
-  --muted:#94a3b8;
-  --white:#f8fafc;
-  --ink:#111827;
-  --blue:#2563eb;
-  --gold:#fbbc04;
-  --green:#34a853;
-  --red:#ef4444;
-  --annual-h:128px;
-  --controls-h:248px;
-}
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;min-height:100%;background:var(--bg);font-family:Arial,Helvetica,sans-serif;overflow-x:hidden;overflow-y:auto;scrollbar-gutter:stable}
-body{min-height:100dvh;display:block}
-button,input,select{font:inherit}
-#app{
-  width:100%;min-width:320px;min-height:100dvh;height:auto;
-  display:grid;
-  /* Content-driven rows prevent description collapse when the page is scrolled
-     or when mobile browser chrome/keyboard changes the viewport height. */
-  /* Compact-by-default visual row. The ⛶ control expands only the orbital visual when needed. */
-  grid-template-rows:78px auto auto auto;
-  background:var(--panel);overflow:visible;
-}
-#app > *{width:100%;min-width:0}
-#header{
-  position:relative;z-index:50;display:flex;align-items:center;justify-content:center;
-  padding:8px 92px;background:#0b111e;border-bottom:1px solid var(--line)
-}
-.headerCard{
-  width:min(940px,100%);text-align:center;padding:9px 18px;
-  border:1px solid var(--line);border-radius:12px;
-  background:linear-gradient(180deg,rgba(30,41,59,.82),rgba(15,23,42,.75));
-  box-shadow:0 8px 24px rgba(0,0,0,.18)
-}
-.headerTitle{margin:0;color:#fff;font-size:clamp(16px,1.55vw,25px);font-weight:700;line-height:1.1}
-.headerSub{margin:5px 0 0;color:#94a3b8;font-size:clamp(9px,.72vw,12px);line-height:1.25}
-#modelInfo{
-  min-height:96px;
-  display:grid;
-  grid-template-columns:repeat(6,minmax(0,1fr));
-  grid-template-rows:minmax(96px,auto);
-  align-items:stretch;
-  background:#0a1220;
-  color:#e5e7eb;
-  border-bottom:1px solid #263244;
-  overflow:visible;
-}
-.modelInfoCell{
-  min-width:0;
-  min-height:0;
-  padding:10px 11px;
-  display:flex;
-  flex-direction:column;
-  justify-content:flex-start;
-  align-items:flex-start;
-  border-right:1px solid #263244;
-  overflow:visible;
-}
-.modelInfoCell:last-child{border-right:none}
-.modelInfoTitle{
-  flex:0 0 auto;
-  color:#dbeafe;
-  font-size:clamp(8px,.66vw,11px);
-  font-weight:700;
-  margin-bottom:4px;
-  white-space:nowrap;
-  line-height:1.1
-}
-.modelInfoText{
-  flex:1 1 auto;
-  width:100%;
-  color:#94a3b8;
-  font-size:clamp(8px,.58vw,10px);
-  line-height:1.32;
-  white-space:normal;
-  overflow:visible;
-  overflow-wrap:anywhere;
-  word-break:normal;
-}
-#orbitStage{
-  min-width:0;min-height:0;display:grid;grid-template-rows:minmax(220px,1fr) auto;
-  background:#05070c;border-bottom:1px solid #263244;overflow:visible;
-}
-#orbitStage > *{min-width:0}
-#visualArea{
-  height:clamp(220px,24vw,360px);min-height:220px;position:relative;overflow:hidden;background:
-    radial-gradient(circle at 50% 48%,#132037 0%,#0a111e 52%,#05080e 100%);
-}
-#orbitSvg{display:block;width:100%;height:100%}
-#visualArea{--visual-control-size:42px}
-#playButton,#fullscreenButton{
-  position:absolute;top:12px;z-index:30;
-  width:var(--visual-control-size);height:var(--visual-control-size);
-  border:1px solid rgba(255,255,255,.14);
-  border-radius:50%;background:rgba(15,23,42,.92);color:#fff;
-  cursor:pointer;display:grid;place-items:center;
-  box-shadow:0 8px 20px rgba(0,0,0,.25);
-  backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)
-}
-#playButton{right:14px;font-size:15px}
-#fullscreenButton{left:14px;font-size:19px;line-height:1}
-#playButton:hover,#fullscreenButton:hover{background:#1e293b}
-#playButton:focus-visible,#fullscreenButton:focus-visible{outline:2px solid #93c5fd;outline-offset:2px}
-#orbitStage:fullscreen{
-  width:100vw;height:100vh;min-height:100vh;margin:0;background:#05070c;z-index:9999;
-  display:grid;grid-template-rows:minmax(0,1fr) auto;overflow:auto;
-}
-/* Fallback expand mode for browsers without the Fullscreen API. */
-#orbitStage.isExpanded{
-  position:fixed;inset:0;width:100vw;height:100vh;min-height:100vh;margin:0;background:#05070c;z-index:9999;
-  display:grid;grid-template-rows:minmax(0,1fr) auto;overflow:auto;
-}
-#orbitStage:fullscreen #visualArea,#orbitStage.isExpanded #visualArea{
-  height:auto;min-height:0;
-}
-#orbitStage:fullscreen #orbitSvg,#orbitStage.isExpanded #orbitSvg{width:100%;height:100%}
-#orbitStage:fullscreen #annualGrid,#orbitStage.isExpanded #annualGrid{
-  position:relative;bottom:auto;left:auto;width:100%;min-height:0;height:auto;
-}
-#orbitStage:fullscreen #playButton,#orbitStage:fullscreen #fullscreenButton,
-#orbitStage.isExpanded #playButton,#orbitStage.isExpanded #fullscreenButton{top:18px}
-#orbitStage:fullscreen #playButton,#orbitStage.isExpanded #playButton{right:18px}
-#orbitStage:fullscreen #fullscreenButton,#orbitStage.isExpanded #fullscreenButton{left:18px}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Grand Learning Publication — educational articles, timelines, history, archaeology, geology, astronomy, mathematics and science." />
+  <meta name="theme-color" content="#10233f" />
+  <title>Grand Learning Publication | Knowledge • History • Science</title>
 
-#annualGrid{
-  min-height:128px;height:auto;background:#0f172a;color:#fff;border-top:1px solid #263244;border-bottom:1px solid #263244;
-  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-rows:minmax(64px,auto);overflow:visible
-}
-.annualCell{
-  min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:7px 8px;border-right:1px solid #263244;text-align:center
-}
-.annualCell:last-child{border-right:none}
-.annualCell:nth-child(5n){border-right:none}
-.annualLabel{color:#94a3b8;font-size:clamp(8px,.66vw,11px);margin-bottom:5px;white-space:nowrap}
-.annualValue{color:#f8fafc;font-size:clamp(10px,.86vw,15px);font-weight:700;line-height:1.2;white-space:normal}
-.annualValue.accent{color:#93c5fd}
-.annualValue.gold{color:#fde68a}
-.annualValue.season{color:#c4b5fd}
-.annualValue.seasonOpp{color:#67e8f9}
-#controlArea{
-  min-height:248px;height:auto;background:var(--white);color:var(--ink);display:grid;
-  grid-template-rows:auto auto minmax(120px,auto);border-top:1px solid #d5dae2;overflow:visible
-}
-#calendarRow{
-  display:grid;grid-template-columns:1.0fr 1.2fr 1.2fr 1.2fr 2.5fr;gap:10px;
-  min-height:76px;padding:10px 14px;border-bottom:1px solid #d9dee7;align-items:end
-}
-.controlBlock{min-width:0}
-.controlLabel{display:block;color:#64748b;font-size:clamp(8px,.68vw,11px);margin-bottom:4px}
-.controlInput,.controlSelect{
-  width:100%;height:34px;border:1px solid #d7dce4;border-radius:8px;background:#fff;color:#111827;
-  padding:0 9px;outline:none;font-size:clamp(9px,.75vw,12px)
-}
-.controlInput:focus,.controlSelect:focus{border-color:#93c5fd;box-shadow:0 0 0 2px rgba(37,99,235,.12)}
-.yearWrap{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-#dateStatus{min-width:0;align-self:end;height:34px;padding:8px 10px;border-radius:8px;background:#eef2f7;overflow:hidden;
-  color:#334155;font-size:clamp(9px,.74vw,12px);white-space:nowrap;text-overflow:ellipsis}
-#summary{
-  display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #d9dee7
-}
-.summaryItem{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #d9dee7}
-.summaryItem:last-child{border-right:none}
-.summaryLabel{color:#64748b;font-size:clamp(8px,.66vw,11px);margin-bottom:3px}
-.summaryValue{color:#111827;font-size:clamp(10px,.82vw,14px);font-weight:700;white-space:nowrap}
-#timelineAndMenus{min-width:0;min-height:124px;padding:8px 14px;display:grid;grid-template-rows:26px auto;gap:6px}
-.sliderRow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
-#daySlider{width:100%;accent-color:#2563eb;cursor:pointer}
-#dayValue{width:92px;text-align:right;color:#111827;font-size:clamp(9px,.72vw,12px);font-weight:700}
-#menuRow{display:grid;grid-template-columns:1fr 2fr 2fr;gap:10px;align-items:end}
-.menuBlock{min-width:0}
-.smallNote{color:#64748b;font-size:8px;align-self:center}
+  <style>
+    :root{
+      --navy:#10233f;
+      --navy-2:#18365e;
+      --gold:#d6a84b;
+      --cream:#f7f3ea;
+      --paper:#fffdf8;
+      --ink:#1e2937;
+      --muted:#687486;
+      --line:#e6e0d3;
+      --white:#ffffff;
+      --shadow:0 14px 35px rgba(16,35,63,.10);
+      --radius:18px;
+      --max:1180px;
+    }
 
-@media (max-width:1100px){
-  :root{--annual-h:110px;--controls-h:270px}
-  #app{grid-template-rows:68px auto auto auto}
-  #orbitStage{grid-template-rows:minmax(200px,clamp(200px,24vw,300px)) auto}
-  #modelInfo{min-height:168px;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(84px,auto))}
-  .modelInfoCell:nth-child(3n){border-right:none}
-  .modelInfoCell:nth-child(n+4){border-top:1px solid #263244}
-  .modelInfoText{overflow:visible;display:block;-webkit-line-clamp:unset}
-  #annualGrid{min-height:110px;grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-rows:minmax(55px,auto);height:auto}
-  .annualCell:nth-child(5n){border-right:none}
-  .annualCell:nth-child(n+6){border-top:1px solid #263244}
-  #calendarRow{grid-template-columns:1fr 1.25fr 1.25fr 1.25fr;grid-template-areas:"era year month day" "status status status status";height:100%}
-  #eraBlock{grid-area:era}#yearBlock{grid-area:year}#monthBlock{grid-area:month}#dayBlock{grid-area:day}#dateStatus{grid-area:status}
-  #controlArea{grid-template-rows:auto auto minmax(140px,auto)}
-}
-@media (max-width:700px){
-  :root{--annual-h:300px;--controls-h:315px}
-  #app{grid-template-rows:68px auto auto auto}
-  #orbitStage{grid-template-rows:minmax(200px,220px) auto}
-  #header{padding:6px 52px}
-  .headerCard{padding:7px 12px}
-  .headerSub{font-size:8px}
-  #playButton,#fullscreenButton{top:8px;width:38px;height:38px}
-  #playButton{right:8px;font-size:13px}
-  #fullscreenButton{left:8px;font-size:17px}
-  #modelInfo{min-height:240px;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(80px,auto))}
-  .modelInfoCell:nth-child(2n){border-right:none}
-  .modelInfoCell:nth-child(n+3){border-top:1px solid #263244}
-  .modelInfoText{-webkit-line-clamp:unset;overflow:visible;display:block}
-  #annualGrid{min-height:300px;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(58px,auto);height:auto;overflow:visible}
-  .annualCell:nth-child(5n){border-right:1px solid #263244}
-  .annualCell:nth-child(2n){border-right:none}
-  .annualCell:nth-child(n+3){border-top:1px solid #263244}
-  #calendarRow{padding:8px;grid-template-columns:1fr 1.2fr 1.2fr 1.2fr;gap:6px;height:100%}
-  .controlInput,.controlSelect,#dateStatus{height:31px}
-  #controlArea{grid-template-rows:auto auto minmax(155px,auto)}
-  #menuRow{grid-template-columns:1fr;gap:5px;align-items:stretch}
-  #timelineAndMenus{padding:7px 8px}
-}
-</style>
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      color:var(--ink);
+      background:var(--cream);
+      font-family:Georgia, "Times New Roman", serif;
+      line-height:1.65;
+    }
+
+    a{color:inherit;text-decoration:none}
+    img{max-width:100%;display:block}
+
+    .topbar{
+      background:var(--navy);
+      color:#dfe9f5;
+      font:600 13px/1.4 Arial, sans-serif;
+      letter-spacing:.04em;
+    }
+
+    .container{
+      width:min(var(--max), calc(100% - 36px));
+      margin:auto;
+    }
+
+    .topbar-inner{
+      min-height:38px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+
+    header{
+      position:sticky;
+      top:0;
+      z-index:50;
+      background:rgba(255,253,248,.96);
+      border-bottom:1px solid var(--line);
+      backdrop-filter:blur(10px);
+    }
+
+    .nav{
+      min-height:76px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:28px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:0;
+    }
+
+    .brand-mark{
+      width:44px;
+      height:44px;
+      flex:0 0 44px;
+      display:grid;
+      place-items:center;
+      border:2px solid var(--gold);
+      color:var(--gold);
+      border-radius:12px;
+      font:700 17px Arial,sans-serif;
+    }
+
+    .brand-text{
+      min-width:0;
+    }
+
+    .brand-title{
+      margin:0;
+      color:var(--navy);
+      font-size:20px;
+      line-height:1.1;
+      font-weight:700;
+    }
+
+    .brand-subtitle{
+      margin:4px 0 0;
+      color:var(--muted);
+      font:600 11px/1.2 Arial,sans-serif;
+      letter-spacing:.11em;
+      text-transform:uppercase;
+    }
+
+    .nav-links{
+      display:flex;
+      align-items:center;
+      gap:24px;
+      font:700 14px/1 Arial,sans-serif;
+    }
+
+    .nav-links a{
+      padding:11px 2px;
+      color:var(--navy);
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active{color:#9b6d12}
+
+    .nav-actions{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .icon-btn{
+      width:40px;
+      height:40px;
+      border:1px solid var(--line);
+      background:var(--white);
+      border-radius:12px;
+      cursor:pointer;
+      color:var(--navy);
+      font:700 16px Arial,sans-serif;
+    }
+
+    .menu-btn{display:none}
+
+    .hero{
+      padding:76px 0 56px;
+      background:
+        radial-gradient(circle at 80% 10%, rgba(214,168,75,.17), transparent 35%),
+        linear-gradient(135deg, #fffdf8 0%, #f3eee3 100%);
+      border-bottom:1px solid var(--line);
+    }
+
+    .hero-grid{
+      display:grid;
+      grid-template-columns:1.35fr .65fr;
+      gap:44px;
+      align-items:center;
+    }
+
+    .eyebrow{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      color:#8b6215;
+      font:800 12px/1 Arial,sans-serif;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      margin-bottom:18px;
+    }
+
+    .eyebrow::before{
+      content:"";
+      width:28px;
+      height:2px;
+      background:var(--gold);
+    }
+
+    h1{
+      margin:0;
+      max-width:780px;
+      color:var(--navy);
+      font-size:clamp(42px,6vw,72px);
+      line-height:.98;
+      letter-spacing:-.035em;
+    }
+
+    .hero p{
+      max-width:700px;
+      margin:24px 0 30px;
+      font-size:19px;
+      color:#536072;
+    }
+
+    .hero-buttons{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+    }
+
+    .btn{
+      border:0;
+      border-radius:12px;
+      padding:13px 19px;
+      cursor:pointer;
+      font:800 14px Arial,sans-serif;
+      display:inline-flex;
+      justify-content:center;
+      align-items:center;
+      gap:8px;
+    }
+
+    .btn-primary{background:var(--navy);color:white}
+    .btn-primary:hover{background:var(--navy-2)}
+    .btn-secondary{background:white;color:var(--navy);border:1px solid var(--line)}
+
+    .hero-note{
+      background:var(--navy);
+      color:#fff;
+      border-radius:24px;
+      padding:28px;
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .hero-note::after{
+      content:"";
+      position:absolute;
+      width:180px;
+      height:180px;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:50%;
+      right:-80px;
+      bottom:-80px;
+    }
+
+    .hero-note h2{
+      margin:0 0 14px;
+      font-size:25px;
+      line-height:1.2;
+    }
+
+    .hero-note p{
+      margin:0 0 22px;
+      color:#d7e1ee;
+      font-size:15px;
+    }
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+    }
+
+    .stat{
+      padding:13px;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.11);
+      border-radius:12px;
+      text-align:center;
+    }
+
+    .stat strong{
+      display:block;
+      font:800 20px Arial,sans-serif;
+      color:#fff;
+    }
+
+    .stat span{
+      display:block;
+      margin-top:4px;
+      color:#b9c7d8;
+      font:600 10px Arial,sans-serif;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+
+    section{padding:64px 0}
+
+    .section-heading{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:20px;
+      margin-bottom:28px;
+    }
+
+    .section-heading h2{
+      color:var(--navy);
+      font-size:34px;
+      margin:0;
+      line-height:1.1;
+    }
+
+    .section-heading p{
+      max-width:560px;
+      margin:0;
+      color:var(--muted);
+      font-size:15px;
+    }
+
+    .topics{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:12px;
+    }
+
+    .topic{
+      background:var(--paper);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:21px 16px;
+      transition:.2s ease;
+    }
+
+    .topic:hover{
+      transform:translateY(-3px);
+      box-shadow:var(--shadow);
+      border-color:#d9c28b;
+    }
+
+    .topic-icon{
+      font-size:25px;
+      margin-bottom:12px;
+    }
+
+    .topic h3{
+      margin:0 0 4px;
+      color:var(--navy);
+      font-size:18px;
+    }
+
+    .topic p{
+      margin:0;
+      color:var(--muted);
+      font:14px/1.5 Arial,sans-serif;
+    }
+
+    .blog-section{background:#f0ece3}
+
+    .toolbar{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-bottom:22px;
+    }
+
+    .search-box{
+      flex:1 1 300px;
+      position:relative;
+    }
+
+    .search-box input{
+      width:100%;
+      height:48px;
+      padding:0 16px 0 44px;
+      border:1px solid var(--line);
+      background:var(--white);
+      border-radius:12px;
+      outline:none;
+      color:var(--ink);
+      font:15px Arial,sans-serif;
+    }
+
+    .search-box span{
+      position:absolute;
+      left:15px;
+      top:12px;
+      font:18px Arial,sans-serif;
+      color:var(--muted);
+    }
+
+    .filters{
+      display:flex;
+      gap:8px;
+      overflow:auto;
+      padding-bottom:2px;
+    }
+
+    .filter{
+      white-space:nowrap;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--navy);
+      border-radius:999px;
+      padding:10px 14px;
+      cursor:pointer;
+      font:700 12px Arial,sans-serif;
+    }
+
+    .filter.active,
+    .filter:hover{
+      background:var(--navy);
+      color:white;
+      border-color:var(--navy);
+    }
+
+    .content-layout{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 310px;
+      gap:24px;
+      align-items:start;
+    }
+
+    .posts{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:18px;
+    }
+
+    .card{
+      background:var(--paper);
+      border:1px solid var(--line);
+      border-radius:18px;
+      overflow:hidden;
+      box-shadow:0 5px 18px rgba(16,35,63,.04);
+      transition:.2s ease;
+    }
+
+    .card:hover{
+      transform:translateY(-4px);
+      box-shadow:var(--shadow);
+    }
+
+    .card-top{
+      height:150px;
+      padding:20px;
+      color:#fff;
+      background:
+        linear-gradient(135deg, rgba(16,35,63,.98), rgba(40,67,103,.92)),
+        #10233f;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+
+    .card-top.earth{background:linear-gradient(135deg,#384c35,#7a7351)}
+    .card-top.copper{background:linear-gradient(135deg,#6e3c25,#b86f42)}
+    .card-top.sky{background:linear-gradient(135deg,#1f466b,#557ea0)}
+    .card-top.stone{background:linear-gradient(135deg,#3f4245,#777a7b)}
+    .card-top.civilization{background:linear-gradient(135deg,#574125,#998158)}
+
+    .badge{
+      align-self:flex-start;
+      border:1px solid rgba(255,255,255,.35);
+      background:rgba(255,255,255,.10);
+      border-radius:999px;
+      padding:6px 10px;
+      font:800 10px Arial,sans-serif;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+
+    .card-top .number{
+      font:800 34px Arial,sans-serif;
+      opacity:.85;
+    }
+
+    .card-body{padding:21px}
+
+    .meta{
+      display:flex;
+      gap:9px;
+      flex-wrap:wrap;
+      color:#8a94a1;
+      font:700 11px Arial,sans-serif;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+    }
+
+    .card h3{
+      margin:11px 0 9px;
+      color:var(--navy);
+      font-size:23px;
+      line-height:1.18;
+    }
+
+    .card p{
+      margin:0 0 17px;
+      color:var(--muted);
+      font-size:15px;
+    }
+
+    .read{
+      color:#8b6215;
+      font:800 13px Arial,sans-serif;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+
+    .sidebar{
+      display:grid;
+      gap:18px;
+    }
+
+    .side-card{
+      background:var(--paper);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:22px;
+    }
+
+    .side-card h3{
+      margin:0 0 15px;
+      color:var(--navy);
+      font-size:19px;
+    }
+
+    .about-box p{
+      color:var(--muted);
+      font-size:14px;
+      margin:0;
+    }
+.newsletter{
+      background:var(--navy);
+      color:white;
+      border-radius:18px;
+      padding:23px;
+    }
+
+    .newsletter h3{color:white;margin-bottom:8px}
+    .newsletter p{
+      margin:0 0 15px;
+      color:#cdd8e5;
+      font-size:13px;
+    }
+
+    .newsletter input{
+      width:100%;
+      height:43px;
+      padding:0 12px;
+      border:0;
+      border-radius:10px;
+      margin-bottom:9px;
+      outline:none;
+    }
+
+    .newsletter button{
+      width:100%;
+      height:43px;
+      border:0;
+      border-radius:10px;
+      background:var(--gold);
+      color:#132641;
+      cursor:pointer;
+      font:800 13px Arial,sans-serif;
+    }
+
+    .timeline{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:14px;
+    }
+
+    .timeline-item{
+      position:relative;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:19px;
+    }
+
+    .timeline-year{
+      color:#9b6d12;
+      font:800 12px Arial,sans-serif;
+      letter-spacing:.08em;
+    }
+
+    .timeline-item h3{
+      color:var(--navy);
+      font-size:19px;
+      margin:8px 0 6px;
+    }
+
+    .timeline-item p{
+      margin:0;
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    footer{
+      background:#0b192d;
+      color:#b9c6d5;
+      padding:48px 0 25px;
+    }
+
+    .footer-grid{
+      display:grid;
+      grid-template-columns:1.4fr .8fr .8fr .9fr;
+      gap:30px;
+      padding-bottom:35px;
+      border-bottom:1px solid rgba(255,255,255,.1);
+    }
+
+    footer h3{
+      color:#fff;
+      margin:0 0 12px;
+      font-size:18px;
+    }
+
+    footer p,
+    footer a{
+      font:13px/1.7 Arial,sans-serif;
+      color:#b9c6d5;
+    }
+
+    footer a:hover{color:white}
+
+    .footer-bottom{
+      padding-top:20px;
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+      font:12px Arial,sans-serif;
+    }
+
+    .modal{
+      position:fixed;
+      inset:0;
+      z-index:100;
+      background:rgba(7,18,34,.72);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+
+    .modal.open{display:flex}
+
+    .modal-panel{
+      width:min(850px,100%);
+      max-height:90vh;
+      overflow:auto;
+      background:var(--paper);
+      border-radius:22px;
+      box-shadow:0 25px 80px rgba(0,0,0,.3);
+    }
+
+    .modal-head{
+      padding:25px 28px 18px;
+      border-bottom:1px solid var(--line);
+      position:sticky;
+      top:0;
+      background:rgba(255,253,248,.96);
+      backdrop-filter:blur(10px);
+      z-index:2;
+    }
+
+    .modal-head .meta{margin-bottom:8px}
+
+    .modal-head h2{
+      margin:0;
+      color:var(--navy);
+      font-size:34px;
+      line-height:1.12;
+    }
+
+    .close{
+      position:absolute;
+      top:18px;
+      right:18px;
+      width:38px;
+      height:38px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      background:white;
+      color:var(--navy);
+      cursor:pointer;
+      font:700 17px Arial,sans-serif;
+    }
+
+    .modal-content{
+      padding:28px;
+      color:#435063;
+      font-size:17px;
+    }
+
+    .modal-content h4{
+      color:var(--navy);
+      font-size:22px;
+      margin:25px 0 8px;
+    }
+
+    .modal-content p{margin:0 0 15px}
+
+
+
+    .modal-content .btn{
+      display:inline-flex;
+      text-decoration:none;
+    }
+
+    .modal-content img{
+      max-width:100%;
+      height:auto;
+      border-radius:12px;
+    }
+
+    .modal-content blockquote{
+      margin:18px 0;
+      padding:14px 18px;
+      border-left:4px solid var(--gold);
+      background:#f3eee3;
+      border-radius:0 10px 10px 0;
+    }
+
+    .modal-content code{
+      background:#eee9de;
+      padding:2px 5px;
+      border-radius:5px;
+      font-family:Consolas,monospace;
+      font-size:.9em;
+    }
+
+    .modal-content pre{
+      padding:16px;
+      overflow:auto;
+      background:#10233f;
+      color:#fff;
+      border-radius:12px;
+    }
+
+    .empty{
+      display:none;
+      grid-column:1/-1;
+      padding:45px 20px;
+      text-align:center;
+      background:white;
+      border:1px solid var(--line);
+      border-radius:18px;
+      color:var(--muted);
+    }
+
+    @media (max-width: 980px){
+      .hero-grid{grid-template-columns:1fr}
+      .topics{grid-template-columns:repeat(3,1fr)}
+      .content-layout{grid-template-columns:1fr}
+      .sidebar{grid-template-columns:repeat(2,1fr)}
+      .timeline{grid-template-columns:repeat(2,1fr)}
+      .footer-grid{grid-template-columns:repeat(2,1fr)}
+    }
+
+    @media (max-width: 760px){
+      .topbar-inner span:last-child{display:none}
+      .nav{min-height:68px}
+      .nav-links{
+        display:none;
+        position:absolute;
+        left:18px;
+        right:18px;
+        top:72px;
+        padding:10px;
+        background:var(--paper);
+        border:1px solid var(--line);
+        border-radius:14px;
+        box-shadow:var(--shadow);
+        flex-direction:column;
+        align-items:stretch;
+        gap:0;
+      }
+      .nav-links.open{display:flex}
+      .nav-links a{padding:14px 12px;border-radius:9px}
+      .nav-links a:hover{background:#f3eee3}
+      .menu-btn{display:block}
+      .nav-actions .theme-btn{display:none}
+      .hero{padding:55px 0 42px}
+      .hero p{font-size:17px}
+      .topics{grid-template-columns:repeat(2,1fr)}
+      .posts{grid-template-columns:1fr}
+      .sidebar{grid-template-columns:1fr}
+    }
+
+    @media (max-width: 520px){
+      .container{width:min(var(--max),calc(100% - 24px))}
+      .brand-title{font-size:17px}
+      .brand-subtitle{font-size:9px}
+      .brand-mark{width:38px;height:38px;flex-basis:38px;font-size:14px}
+      h1{font-size:42px}
+      .stats{grid-template-columns:1fr}
+      .topics{grid-template-columns:1fr}
+      .timeline{grid-template-columns:1fr}
+      .footer-grid{grid-template-columns:1fr}
+      .section-heading{display:block}
+      .section-heading h2{margin-bottom:9px}
+      .hero-buttons .btn{width:100%}
+      .card-top{height:135px}
+      .modal-head h2{font-size:27px}
+      .modal-content{font-size:16px}
+    }
+  </style>
 </head>
-<body>
-<div id="app">
 
-  <header id="header">
-    <div class="headerCard">
-      <h1 class="headerTitle">Earth Annual Orbital Cycle</h1>
-      <p class="headerSub">Historical Calendar • BCE / CE • Day of Year • Weekday • Earth–Sun Distance • Seasons • Orbital Position</p>
+<body>
+  <div class="topbar">
+    <div class="container topbar-inner">
+      <span>GRAND LEARNING PUBLICATION</span>
+      <span>Knowledge • History • Science • Civilization</span>
+    </div>
+  </div>
+
+  <header>
+    <div class="container nav">
+      <a class="brand" href="#home" aria-label="Grand Learning Publication home">
+        <div class="brand-mark">GLP</div>
+        <div class="brand-text">
+          <p class="brand-title">Grand Learning</p>
+          <p class="brand-subtitle">Publication &amp; Knowledge Archive</p>
+        </div>
+      </a>
+
+      <nav class="nav-links" id="navLinks" aria-label="Main navigation">
+        <a class="active" href="#home">Home</a>
+        <a href="#topics">Topics</a>
+        <a href="#blog">Blog</a>
+        <a href="#timeline">Timelines</a>
+        <a href="#about">About</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="icon-btn theme-btn" id="themeBtn" title="Toggle reading mode" aria-label="Toggle reading mode">◐</button>
+        <button class="icon-btn menu-btn" id="menuBtn" title="Open menu" aria-label="Open menu">☰</button>
+      </div>
     </div>
   </header>
 
-  <section id="modelInfo" aria-label="Calendar and orbital model descriptions">
-    <div class="modelInfoCell">
-      <div class="modelInfoTitle">Calendar Engine</div>
-      <div class="modelInfoText">Follows the supplied historical registry rules for BCE/CE year length, leap years, month lengths, weekdays, and the 1582 calendar transition. Season labels follow the displayed equinox/solstice cycle.</div>
-    </div>
-    <div class="modelInfoCell">
-      <div class="modelInfoTitle">Date Calculation</div>
-      <div class="modelInfoText">Uses integer calendar arithmetic rather than the browser Date object, so Day of Year and 365/366 remain stable for BCE and large years.</div>
-    </div>
-    <div class="modelInfoCell">
-      <div class="modelInfoTitle">Sun F₁</div>
-      <div class="modelInfoText">The Sun is drawn at F₁, the first focus of the displayed ellipse. This focal geometry is intentionally exaggerated for visibility.</div>
-    </div>
-    <div class="modelInfoCell">
-      <div class="modelInfoTitle">Empty Focus F₂</div>
-      <div class="modelInfoText">F₂ is the second focus of the displayed ellipse and contains no astronomical body. Its marker remains fixed to the ellipse geometry.</div>
-    </div>
-    <div class="modelInfoCell">
-      <div class="modelInfoTitle">Earth Axial Tilt</div>
-      <div class="modelInfoText">Earth is shown with a 23.44° axial tilt. The tilted red axis remains attached to Earth while the surface rotates.</div>
-    </div>
-    <div class="modelInfoCell">
-      <div class="modelInfoTitle">Visual Model</div>
-      <div class="modelInfoText">Ellipse eccentricity is exaggerated for visibility. Earth, F₁, F₂, axial tilt and event positions stay anchored to the displayed ellipse, while Northern and Southern Hemisphere seasons are shown as opposite seasonal states.</div>
-    </div>
-  </section>
+  <main id="home">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow">Independent Educational Publication</div>
+          <h1>Explore the story of knowledge.</h1>
+          <p>
+            Clear, chronological and visually organized learning resources covering
+            human history, archaeology, geology, astronomy, mathematics, science and civilization.
+          </p>
+          <div class="hero-buttons">
+            <a class="btn btn-primary" href="#blog">Explore the Blog</a>
+            <a class="btn btn-secondary" href="#timeline">View Timelines</a>
+          </div>
+        </div>
 
-  <section id="orbitStage" aria-label="Orbital visual and annual orbital position">
-    <main id="visualArea">
-    <button id="fullscreenButton" type="button" aria-label="Full Screen / Expand orbital visual" title="Full Screen / Expand the orbital visual">⛶</button>
-    <button id="playButton" type="button" aria-label="Play or pause animation" title="Play / Pause">▶</button>
-<svg id="orbitSvg" viewBox="0 0 1200 560" preserveAspectRatio="xMidYMid meet" role="img"
-         aria-label="Earth annual orbital cycle with Sun F1, Empty Focus F2, equinoxes, solstices, perihelion, aphelion, and opposite Northern and Southern Hemisphere seasons">
-
-      <rect width="1200" height="560" fill="#05070c"/>
-      <line x1="70" y1="280" x2="1130" y2="280" stroke="rgba(255,255,255,.055)" stroke-width="1" stroke-dasharray="4 4"/>
-      <line x1="600" y1="35" x2="600" y2="525" stroke="rgba(255,255,255,.055)" stroke-width="1" stroke-dasharray="4 4"/>
-
-      <ellipse id="orbit" cx="600" cy="280" rx="440" ry="205" fill="none"
-               stroke="rgba(255,255,255,.20)" stroke-width="2" stroke-dasharray="7 6">
-        <title>Earth orbital ellipse; eccentricity is exaggerated for visibility</title>
-      </ellipse>
-      <line id="majorAxis" x1="160" y1="280" x2="1040" y2="280"
-            stroke="rgba(255,255,255,.08)" stroke-width="1" stroke-dasharray="6 6"/>
-
-      <circle id="focus1" r="6" fill="#fbbc04"><title>Sun F₁ — first focus of the visual ellipse</title></circle>
-      <text id="focus1Text" fill="#fde68a" font-size="15" font-weight="700" text-anchor="middle">Sun F₁</text>
-
-      <circle id="focus2" r="5" fill="#94a3b8"><title>Empty Focus F₂ — second focus of the visual ellipse</title></circle>
-      <text id="focus2Text" fill="#cbd5e1" font-size="14" font-weight="700" text-anchor="middle">Empty Focus F₂</text>
-
-      <g id="eventMarkers"></g>
-
-      <!-- Sun -->
-      <g id="sunGroup">
-        <circle r="58" fill="rgba(251,188,4,.05)"/>
-        <circle r="43" fill="rgba(251,188,4,.09)"/>
-        <g id="sunSurface">
-          <circle r="28" fill="#fbbc04"/>
-          <circle r="20" fill="#ffd45c"/>
-          <path d="M-19,-5 C-8,-18 6,-18 18,-4 C8,6 -7,12 -19,-5Z" fill="rgba(255,150,0,.32)"/>
-          <path d="M-11,10 C-2,3 8,4 14,12 C2,19 -7,18 -11,10Z" fill="rgba(255,120,0,.30)"/>
-          <circle cx="-10" cy="-9" r="3.2" fill="rgba(208,78,0,.42)"/>
-          <circle cx="10" cy="-6" r="2.4" fill="rgba(208,78,0,.38)"/>
-          <circle cx="4" cy="12" r="2.8" fill="rgba(208,78,0,.36)"/>
-          <path d="M-31,0 A31,31 0 0 1 21,-23" fill="none" stroke="rgba(255,214,92,.65)" stroke-width="2" stroke-linecap="round"/>
-          <path d="M20,-23 l-6,1 l3,5" fill="none" stroke="rgba(255,214,92,.65)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </g>
-      </g>
-
-      <line id="distanceLine" stroke="rgba(251,188,4,.34)" stroke-width="2"/>
-
-      <!-- Earth -->
-      <g id="earthGroup">
-        <g id="earthSpin">
-          <circle r="23" fill="rgba(59,130,246,.13)"/>
-          <circle r="15" fill="#1a73e8"/>
-          <path d="M-8-7 Q-4-12 2-9 Q8-7 8-2 Q5 2 0 1 Q-2 5-7 2 Q-10 0-8-7Z" fill="#34a853"/>
-          <path d="M-4 4 Q0 2 6 6 Q5 10 0 10 Q-5 9-4 4Z" fill="#34a853"/>
-          <path d="M0-15 A15 15 0 0 0 0 15 L15 15 L15-15Z" fill="rgba(0,0,0,.48)"/>
-        </g>
-        <g transform="rotate(23.44)">
-          <line x1="0" y1="-27" x2="0" y2="27" stroke="#ef4444" stroke-width="1.5"/>
-          <circle cx="0" cy="-27" r="1.8" fill="#ef4444"/>
-          <circle cx="0" cy="27" r="1.8" fill="#ef4444"/>
-          <text x="0" y="-32" fill="#ef4444" font-size="9" text-anchor="middle">N</text>
-          <text x="0" y="39" fill="#ef4444" font-size="9" text-anchor="middle">S</text>
-        </g>
-      </g>
-
-      <g id="distanceLabel">
-        <rect id="distanceRect" rx="4" fill="rgba(15,23,42,.82)"/>
-        <text id="distanceText" fill="#e2e8f0" font-size="10" font-weight="600" text-anchor="middle"/>
-      </g>
-
-      <text id="longitudeText" x="20" y="535" fill="#cbd5e1" font-size="12" font-weight="600"/>
-</svg>
-    </main>
-
-    <!-- ANNUAL GRID: stays directly under the visual and moves inside fullscreen -->
-    <section id="annualGrid" aria-label="Annual Orbital Position and Hemisphere Seasons">
-    <div class="annualCell"><div class="annualLabel">Calendar Date</div><div id="dateValue" class="annualValue accent">April 12, 2026 CE</div></div>
-    <div class="annualCell"><div class="annualLabel">Northern Hemisphere</div><div id="northernSeasonValue" class="annualValue season">Spring</div></div>
-    <div class="annualCell"><div class="annualLabel">Southern Hemisphere</div><div id="southernSeasonValue" class="annualValue seasonOpp">Autumn</div></div>
-    <div class="annualCell"><div class="annualLabel">Day of Year</div><div id="doyValue" class="annualValue">Day 102 / 365</div></div>
-    <div class="annualCell"><div class="annualLabel">Weekday</div><div id="weekdayValue" class="annualValue">Sunday</div></div>
-    <div class="annualCell"><div class="annualLabel">Year Type</div><div id="yearTypeValue" class="annualValue">Common Year</div></div>
-    <div class="annualCell"><div class="annualLabel">Calendar System</div><div id="calendarSystemValue" class="annualValue">Gregorian System</div></div>
-    <div class="annualCell"><div class="annualLabel">Days in Month</div><div id="monthDaysValue" class="annualValue">30 days</div></div>
-    <div class="annualCell"><div class="annualLabel">Days Remaining</div><div id="remainingValue" class="annualValue">263</div></div>
-    <div class="annualCell"><div class="annualLabel">Orbital Position</div><div id="orbitalValue" class="annualValue gold">22.4°</div></div>
+        <aside class="hero-note">
+          <h2>Learn across time.</h2>
+          <p>
+            Move from the deep history of Earth and human evolution to ancient civilizations
+            and the development of scientific ideas.
+          </p>
+          <div class="stats">
+            <div class="stat"><strong>07</strong><span>Core Areas</span></div>
+            <div class="stat"><strong>∞</strong><span>Learning Paths</span></div>
+            <div class="stat"><strong>01</strong><span>Knowledge Hub</span></div>
+          </div>
+        </aside>
+      </div>
     </section>
-  </section>
 
-  <!-- FIXED BOTTOM CONTROLS -->
-  <section id="controlArea" aria-label="Calendar and simulation controls">
-
-    <div id="calendarRow">
-      <div id="eraBlock" class="controlBlock">
-        <label class="controlLabel" for="eraSelect">Era</label>
-        <select id="eraSelect" class="controlSelect">
-          <option value="BCE">BCE</option>
-          <option value="CE" selected>CE</option>
-        </select>
-      </div>
-
-      <div id="yearBlock" class="controlBlock">
-        <label class="controlLabel" for="yearInput">Year</label>
-        <input id="yearInput" class="controlInput" inputmode="numeric" autocomplete="off" value="2026" aria-label="Calendar year">
-      </div>
-
-      <div id="monthBlock" class="controlBlock">
-        <label class="controlLabel" for="monthSelect">Month</label>
-        <select id="monthSelect" class="controlSelect">
-          <option value="1">January</option><option value="2">February</option><option value="3">March</option>
-          <option value="4" selected>April</option><option value="5">May</option><option value="6">June</option>
-          <option value="7">July</option><option value="8">August</option><option value="9">September</option>
-          <option value="10">October</option><option value="11">November</option><option value="12">December</option>
-        </select>
-      </div>
-
-      <div id="dayBlock" class="controlBlock">
-        <label class="controlLabel" for="dayInput">Day</label>
-        <input id="dayInput" class="controlInput" inputmode="numeric" autocomplete="off" value="12" min="1" aria-label="Calendar day">
-      </div>
-
-      <div id="dateStatus">2026 CE • Thursday January 1 • Common Year • 365 days • Gregorian System</div>
-    </div>
-
-    <div id="summary">
-      <div class="summaryItem"><div class="summaryLabel">Full Date</div><div id="fullDateSummary" class="summaryValue">April 12, 2026 CE</div></div>
-      <div class="summaryItem"><div class="summaryLabel">January 1 Weekday</div><div id="jan1Summary" class="summaryValue">Thursday</div></div>
-      <div class="summaryItem"><div class="summaryLabel">Month Day</div><div id="monthDaySummary" class="summaryValue">12 / 30</div></div>
-      <div class="summaryItem"><div class="summaryLabel">Weekday Position</div><div id="weekdayPosSummary" class="summaryValue">Sunday • Day 7</div></div>
-    </div>
-
-    <div id="timelineAndMenus">
-      <div class="sliderRow">
-        <input id="daySlider" type="range" min="1" max="365" step="1" value="102" aria-label="Day of year">
-        <span id="dayValue">Day 102 / 365</span>
-      </div>
-
-      <div id="menuRow">
-        <div class="menuBlock">
-          <label class="controlLabel" for="speedSelect">Simulation Time Warp Speed <span style="color:#94a3b8">(continuous)</span></label>
-          <select id="speedSelect" class="controlSelect">
-            <option value="0.25">0.25 Days / Frame</option>
-            <option value="0.5">0.5 Days / Frame</option>
-            <option value="1" selected>1 Day / Frame</option>
-            <option value="2.5">2.5 Days / Frame</option>
-            <option value="5">5 Days / Frame</option>
-          </select>
+    <section id="topics">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">Explore</div>
+            <h2>Knowledge Topics</h2>
+          </div>
+          <p>
+            Browse the publication by subject and discover connected ideas across history,
+            science and human civilization.
+          </p>
         </div>
 
-        <div class="menuBlock">
-          <label class="controlLabel" for="eventSelect">2026 Solstice / Equinox / Perihelion / Aphelion Jumps</label>
-          <select id="eventSelect" class="controlSelect">
-            <option value="">Jump to 2026 milestone…</option>
-            <option value="3">Perihelion — January 3, 2026</option>
-            <option value="79">March Equinox — March 20, 2026</option>
-            <option value="172">June Solstice — June 21, 2026</option>
-            <option value="187">Aphelion — July 6, 2026</option>
-            <option value="266">September Equinox — September 23, 2026</option>
-            <option value="355">December Solstice — December 21, 2026</option>
-          </select>
-        </div>
-
-        <div class="smallNote">
-          Enter a BCE/CE year and press Enter to commit it. Every calendar label updates together: Full Date, Northern Hemisphere season, Southern Hemisphere season, Day of Year, Weekday, Year Type, Calendar System, month days, slider maximum, and weekday summaries. Calculations use integer arithmetic without JavaScript Date().
+        <div class="topics">
+          <a class="topic" href="#blog" data-topic="History">
+            <div class="topic-icon">🏛️</div>
+            <h3>History</h3>
+            <p>Periods, civilizations, dates and historical development.</p>
+          </a>
+          <a class="topic" href="#blog" data-topic="Archaeology">
+            <div class="topic-icon">🏺</div>
+            <h3>Archaeology</h3>
+            <p>Material culture, sites, tools, metals and evidence.</p>
+          </a>
+          <a class="topic" href="#blog" data-topic="Human Evolution">
+            <div class="topic-icon">🧬</div>
+            <h3>Human Evolution</h3>
+            <p>Hominins, migration, adaptation and cultural change.</p>
+          </a>
+          <a class="topic" href="#blog" data-topic="Geology">
+            <div class="topic-icon">🌍</div>
+            <h3>Geology</h3>
+            <p>Earth history, eons, eras, periods and epochs.</p>
+          </a>
+          <a class="topic" href="#blog" data-topic="Astronomy">
+            <div class="topic-icon">🌌</div>
+            <h3>Astronomy</h3>
+            <p>Solar systems, planetary motion, seasons and orbits.</p>
+          </a>
+          <a class="topic" href="#blog" data-topic="Mathematics">
+            <div class="topic-icon">∑</div>
+            <h3>Mathematics</h3>
+            <p>Numbers, fractions, geometry and mathematical history.</p>
+          </a>
+          <a class="topic" href="#blog" data-topic="Civilization">
+            <div class="topic-icon">📜</div>
+            <h3>Civilization</h3>
+            <p>Writing, calendars, technology and social development.</p>
+          </a>
+          <a class="topic" href="#blog" data-topic="Science">
+            <div class="topic-icon">🔬</div>
+            <h3>Science</h3>
+            <p>Ideas, discoveries, methods and the history of science.</p>
+          </a>
+          <a class="topic" href="#blog" data-topic="Timelines">
+            <div class="topic-icon">⏳</div>
+            <h3>Timelines</h3>
+            <p>Connected chronological views for faster learning.</p>
+          </a>
+          <a class="topic" href="#about">
+            <div class="topic-icon">✦</div>
+            <h3>Reference</h3>
+            <p>Definitions, comparisons and structured study material.</p>
+          </a>
         </div>
       </div>
+    </section>
+
+    <section class="blog-section" id="blog">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">Latest Learning</div>
+            <h2>Featured Articles</h2>
+          </div>
+          <p>Search your published GitHub projects or filter them by subject.</p>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <span>⌕</span>
+            <input id="searchInput" type="search" placeholder="Search articles..." aria-label="Search articles" />
+          </div>
+          <div class="filters" id="filters">
+            <button class="filter active" data-filter="All">All</button>
+          </div>
+        </div>
+
+        <div id="blogStatus" aria-live="polite" style="display:none;margin:-6px 0 18px;padding:10px 13px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--muted);font:12px Arial,sans-serif;"></div>
+
+        <div class="content-layout">
+          <div class="posts" id="posts"></div>
+
+          <aside class="sidebar">
+            <div class="side-card about-box" id="about">
+              <h3>About Grand Learning</h3>
+              <p>
+                Grand Learning Publication presents structured educational material in a
+                textbook-inspired style, helping readers connect facts, dates, ideas and discoveries.
+              </p>
+            </div>
+<div class="newsletter">
+              <h3>Publication Notes</h3>
+              <p>Use this space for your newsletter, new-article announcements or publication updates.</p>
+              <form id="newsletterForm">
+                <input type="email" placeholder="Your email address" aria-label="Email address" required />
+                <button type="submit">Subscribe</button>
+              </form>
+              <div id="newsletterMessage" style="font:11px Arial,sans-serif;margin-top:9px;color:#d8e1ec;"></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section id="timeline">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">Chronology</div>
+            <h2>Learning Through Time</h2>
+          </div>
+          <p>Build a connected picture of Earth, humanity, civilization and scientific thought.</p>
+        </div>
+
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-year">DEEP TIME</div>
+            <h3>Earth History</h3>
+            <p>Hadean, Archean, Proterozoic and Phanerozoic time scales.</p>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-year">PREHISTORY</div>
+            <h3>Human Evolution</h3>
+            <p>Paleolithic, Mesolithic, Neolithic and the rise of settled communities.</p>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-year">CIVILIZATION</div>
+            <h3>Early Societies</h3>
+            <p>Writing, agriculture, metallurgy, cities, states and long-distance exchange.</p>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-year">SCIENCE</div>
+            <h3>Scientific Ideas</h3>
+            <p>From ancient mathematical traditions to Copernicus, Kepler and modern science.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <h3>Grand Learning Publication</h3>
+          <p>
+            An educational knowledge hub for history, archaeology, human evolution,
+            geology, astronomy, mathematics and science.
+          </p>
+        </div>
+        <div>
+          <h3>Explore</h3>
+          <a href="#topics">Topics</a><br />
+          <a href="#blog">Blog</a><br />
+          <a href="#timeline">Timelines</a>
+        </div>
+        <div>
+          <h3>Publication</h3>
+          <a href="#about">About</a><br />
+          <a href="#blog">Articles</a><br />
+          <a href="#home">Home</a>
+        </div>
+        <div>
+          <h3>GitHub Pages</h3>
+          <p>Static GitHub Pages site with a dynamic blog reader connected to the repository.</p>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>© <span id="year"></span> Grand Learning Publication</span>
+        <span>Built for learning and reference</span>
+      </div>
     </div>
-  </section>
-</div>
+  </footer>
 
-<script>
-"use strict";
+  <div class="modal" id="articleModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-panel">
+      <div class="modal-head">
+        <button class="close" id="closeModal" aria-label="Close article">×</button>
+        <div class="meta" id="modalMeta"></div>
+        <h2 id="modalTitle"></h2>
+      </div>
+      <div class="modal-content" id="modalContent"></div>
+    </div>
+  </div>
 
-/* =========================================================
-   SUPPLIED REGISTRY MODEL
-   ---------------------------------------------------------
-   10,000 BCE–46 BCE : Proleptic Gregorian
-   45 BCE–1581 CE    : Julian
-   1582 CE           : 355-day transition year
-   1583 CE onward    : Gregorian
-========================================================= */
+  <script>
+    /*
+      GRAND LEARNING PUBLICATION — DYNAMIC REPOSITORY BLOG
 
-const WEEKDAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const GREG_COMMON = [31,28,31,30,31,30,31,31,30,31,30,31];
-const GREG_LEAP   = [31,29,31,30,31,30,31,31,30,31,30,31];
+      Your publication website is one repository:
+        grand-learning-publication.github.io
 
-const refs = {
-  eraSelect: document.getElementById("eraSelect"),
-  yearInput: document.getElementById("yearInput"),
-  monthSelect: document.getElementById("monthSelect"),
-  dayInput: document.getElementById("dayInput"),
-  dateStatus: document.getElementById("dateStatus"),
-  dateValue: document.getElementById("dateValue"),
-  northernSeasonValue: document.getElementById("northernSeasonValue"),
-  southernSeasonValue: document.getElementById("southernSeasonValue"),
-  doyValue: document.getElementById("doyValue"),
-  weekdayValue: document.getElementById("weekdayValue"),
-  yearTypeValue: document.getElementById("yearTypeValue"),
-  calendarSystemValue: document.getElementById("calendarSystemValue"),
-  monthDaysValue: document.getElementById("monthDaysValue"),
-  remainingValue: document.getElementById("remainingValue"),
-  orbitalValue: document.getElementById("orbitalValue"),
-  fullDateSummary: document.getElementById("fullDateSummary"),
-  jan1Summary: document.getElementById("jan1Summary"),
-  monthDaySummary: document.getElementById("monthDaySummary"),
-  weekdayPosSummary: document.getElementById("weekdayPosSummary"),
-  daySlider: document.getElementById("daySlider"),
-  dayValue: document.getElementById("dayValue"),
-  speedSelect: document.getElementById("speedSelect"),
-  eventSelect: document.getElementById("eventSelect"),
-  playButton: document.getElementById("playButton"),
-  fullscreenButton: document.getElementById("fullscreenButton"),
-  orbitStage: document.getElementById("orbitStage"),
-  visualArea: document.getElementById("visualArea")
-};
+      Your learning projects can be separate repositories, for example:
+        Earth-s-Annual-Orbit-Animation-with-an-Infinite-Calendar
 
-function toBigIntYear(text){
-  const s = String(text).trim().replace(/,/g,"");
-  if(!/^\d+$/.test(s) || s === "0") return null;
-  return BigInt(s);
-}
-function normalizeEra(era, year){
-  // No year zero: 1 BCE = astronomical year 0, 2 BCE = -1, etc.
-  return era === "BCE" ? (1n - year) : year;
-}
-function isGregorianLeap(y){
-  const r4 = y % 4n;
-  const r100 = y % 100n;
-  const r400 = y % 400n;
-  return r4 === 0n && (r100 !== 0n || r400 === 0n);
-}
-function isJulianLeap(y){
-  return y % 4n === 0n;
-}
-function calendarSystem(y){
-  if(y <= -45n) return "Proleptic Gregorian System";
-  if(y <= 1581n) return "Julian System";
-  if(y === 1582n) return "Gregorian Transition Year";
-  return "Gregorian System";
-}
-function registryEraLabel(y){
-  if(y <= -45n) return "Proleptic Gregorian BCE";
-  if(y <= 1581n) return "ERA 2 • 45 BCE to 1581 CE";
-  if(y === 1582n) return "ERA 3 • 1582 CE Transition";
-  return "ERA 4 • 1583 CE onward";
-}
-function isLeapYear(y){
-  if(y === 1582n) return false;
-  if(y <= -45n) return isGregorianLeap(y);
-  if(y <= 1581n) return isJulianLeap(absBig(y));
-  return isGregorianLeap(y);
-}
-function absBig(x){ return x < 0n ? -x : x; }
+      The Blog section below reads PUBLIC repositories owned by the account below.
+      You do NOT need a /posts/ folder.
 
-function monthLengths(y){
-  if(y === 1582n) return [31,28,31,30,31,30,31,31,30,21,30,31];
-  if(y <= -45n) return isGregorianLeap(y) ? GREG_LEAP.slice() : GREG_COMMON.slice();
-  if(y <= 1581n) return isJulianLeap(absBig(y)) ? GREG_LEAP.slice() : GREG_COMMON.slice();
-  return isGregorianLeap(y) ? GREG_LEAP.slice() : GREG_COMMON.slice();
-}
-function daysInYear(y){
-  if(y === 1582n) return 355;
-  return isLeapYear(y) ? 366 : 365;
-}
+      To publish another blog/project:
+        1. Create another public GitHub repository.
+        2. Put the project/article in that repository.
+        3. Push/commit the files to its main branch.
+        4. Refresh the Grand Learning Publication website.
 
-/* 1582 special date validity and compressed day-of-year */
-function isValidMonthDay(y,m,d){
-  const ml = monthLengths(y);
-  if(m < 1 || m > 12 || d < 1) return false;
-  if(y === 1582n && m === 10 && d >= 5 && d <= 14) return false;
-  return d <= ml[m-1] + ((y === 1582n && m === 10) ? 10 : 0);
-}
-function dayOfYear(y,m,d){
-  if(y === 1582n){
-    if(m < 10) return GREG_COMMON.slice(0,m-1).reduce((a,b)=>a+b,0) + d;
-    if(m === 10) return d <= 4 ? 273 + d : 273 + (d - 10);
-    const base = 294; // Oct 31 is compressed Day 294 after the 10 deleted dates
-    return base + GREG_COMMON.slice(10,m-1).reduce((a,b)=>a+b,0) + d;
-  }
-  const ml = monthLengths(y);
-  let total = d;
-  for(let i=0;i<m-1;i++) total += ml[i];
-  return total;
-}
-function dateFromDOY(y,doy){
-  const total = daysInYear(y);
-  if(!Number.isInteger(doy) || doy < 1 || doy > total) return null;
-  if(y === 1582n){
-    if(doy <= 277){
-      const m = doy <= 273 ? Math.floor((doy-1)/31)+1 : 10;
-      if(m < 10){
-        let rem = doy; for(let i=0;i<m-1;i++) rem -= GREG_COMMON[i];
-        return {m,d:rem};
-      }
-      return {m:10,d:doy-273};
+      The new repository will appear automatically.
+
+      The website repository itself is excluded from the Blog.
+    */
+
+    const GITHUB_OWNER = "grand-learning-publication";
+    const WEBSITE_REPO = "grand-learning-publication.github.io";
+    const GITHUB_API = "https://api.github.com";
+
+    let articles = [];
+    let activeFilter = "All";
+
+    const categoryClasses = {
+      "History": "civilization",
+      "Archaeology": "copper",
+      "Human Evolution": "stone",
+      "Geology": "earth",
+      "Astronomy": "sky",
+      "Mathematics": "civilization",
+      "Civilization": "civilization",
+      "Science": "sky",
+      "Interactive": "sky",
+      "Education": "civilization",
+      "Learning Project": "civilization"
+    };
+
+    function escapeHtml(value = "") {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
-    if(doy <= 294) return {m:10,d:doy-273+10};
-    let rem = doy-294;
-    for(let m=11;m<=12;m++){ if(rem <= GREG_COMMON[m-1]) return {m,d:rem}; rem -= GREG_COMMON[m-1]; }
-  }
-  const ml = monthLengths(y);
-  let rem = doy;
-  for(let m=1;m<=12;m++){
-    if(rem <= ml[m-1]) return {m,d:rem};
-    rem -= ml[m-1];
-  }
-  return null;
-}
 
-/* ---------------------------------------------------------
-   Weekday engine
-   Uses exact Julian Day Number arithmetic rather than Date().
-   This works for arbitrarily large integer years and correctly
-   distinguishes Gregorian BCE, Julian dates, and the 1582 switch.
+    function repoApiUrl(repoName) {
+      return `${GITHUB_API}/repos/${GITHUB_OWNER}/${encodeURIComponent(repoName)}`;
+    }
 
-   Weekday index: Monday=0 ... Sunday=6.
---------------------------------------------------------- */
-function floorDiv(a,b){
-  let q=a/b;
-  const r=a%b;
-  if(r<0n) q-=1n;
-  return q;
-}
-function mod7(n){
-  const r=n%7n;
-  return Number(r<0n ? r+7n : r);
-}
-function jdnGregorian(y,m,d){
-  const M=BigInt(m), D=BigInt(d);
-  const a=floorDiv(14n-M,12n);
-  const yy=y+4800n-a;
-  const mm=M+12n*a-3n;
-  return D + floorDiv(153n*mm+2n,5n) + 365n*yy
-       + floorDiv(yy,4n) - floorDiv(yy,100n) + floorDiv(yy,400n) - 32045n;
-}
-function jdnJulian(y,m,d){
-  const M=BigInt(m), D=BigInt(d);
-  const a=floorDiv(14n-M,12n);
-  const yy=y+4800n-a;
-  const mm=M+12n*a-3n;
-  return D + floorDiv(153n*mm+2n,5n) + 365n*yy
-       + floorDiv(yy,4n) - 32083n;
-}
-function calendarSystemForDate(y,m,d){
-  if(y<=-45n) return "Proleptic Gregorian System";       // 46 BCE and earlier
-  if(y<=1581n) return "Julian System";                  // 45 BCE–1581 CE
-  if(y===1582n){
-    if(m===10 && d>=15) return "Gregorian System";
-    return "Julian System";
-  }
-  return "Gregorian System";
-}
-function weekdayIndex(y,m,d){
-  const sys=calendarSystemForDate(y,m,d);
-  const jdn=(sys==="Gregorian System" || sys==="Proleptic Gregorian System")
-    ? jdnGregorian(y,m,d)
-    : jdnJulian(y,m,d);
-  return mod7(jdn);
-}
-function jan1WeekdayIndex(y){
-  return weekdayIndex(y,1,1);
-}
+    function repoContentsUrl(repoName, fileName = "index.html") {
+      return `${GITHUB_API}/repos/${GITHUB_OWNER}/${encodeURIComponent(repoName)}/contents/${encodeURIComponent(fileName)}`;
+    }
 
-/* ---------------------------------------------------------
-   Date formatting
---------------------------------------------------------- */
-function displayYear(era,mag){
-  return `${mag.toString()} ${era}`;
-}
-function fullDateText(era,mag,m,d){
-  return `${MONTHS[m-1]} ${d}, ${mag.toString()} ${era}`;
-}
-function setDayInputSafe(d){
-  refs.dayInput.value = String(d);
-}
+    function repoRawUrl(repoName, fileName = "index.html", branch = "main") {
+      return `https://raw.githubusercontent.com/${GITHUB_OWNER}/${encodeURIComponent(repoName)}/${encodeURIComponent(branch)}/${encodeURIComponent(fileName)}`;
+    }
 
-/* ---------------------------------------------------------
-   Calendar update
---------------------------------------------------------- */
-let current = null;
+    function humanizeRepoName(name = "") {
+      return name
+        .replace(/[-_]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/\b\w/g, letter => letter.toUpperCase());
+    }
 
-function seasonPairForDate(month,day){
-  // Teaching model uses the displayed equinox/solstice cycle.
-  // Equinoxes and solstices define opposite seasons in the two hemispheres.
-  let nh, sh;
-  if ((month===3 && day>=20) || month===4 || month===5 || (month===6 && day<=20)){
-    nh="Spring"; sh="Autumn";
-  } else if ((month===6 && day>=21) || month===7 || month===8 || (month===9 && day<=22)){
-    nh="Summer"; sh="Winter";
-  } else if ((month===9 && day>=23) || month===10 || month===11 || (month===12 && day<=20)){
-    nh="Autumn"; sh="Spring";
-  } else {
-    nh="Winter"; sh="Summer";
-  }
-  return {nh,sh};
-}
+    function detectCategory(repo) {
+      const topics = Array.isArray(repo.topics) ? repo.topics : [];
+      const combined = `${repo.name} ${repo.description || ""} ${topics.join(" ")}`.toLowerCase();
 
-function seasonEventHint(month,day){
-  const s=seasonPairForDate(month,day);
-  return `NH ${s.nh} • SH ${s.sh}`;
-}
+      if (/astronom|orbit|planet|solar|calendar|kepler|copernicus|space|earth/.test(combined)) return "Astronomy";
+      if (/archaeolog|prehistor|paleolith|neolith|bronze age|iron age|metal|copper/.test(combined)) return "Archaeology";
+      if (/human evolution|hominin|homo sapiens|neanderthal|denisovan/.test(combined)) return "Human Evolution";
+      if (/geolog|earth history|hadean|archean|proterozoic|pleistocene|miocene|pliocene/.test(combined)) return "Geology";
+      if (/mathemat|number system|geometry|fraction|zero|calculation/.test(combined)) return "Mathematics";
+      if (/history|civilization|ancient|writing|calendar/.test(combined)) return "History";
+      if (/science|physics|chemistry|biology/.test(combined)) return "Science";
+      return "Learning Project";
+    }
 
-function updateCalendarFromInputs(options={}){
-  const era = refs.eraSelect.value;
-  const mag = toBigIntYear(refs.yearInput.value);
-  const m = Number(refs.monthSelect.value);
-  if(mag === null){
-    refs.dateStatus.textContent = "Enter a positive whole-number year.";
-    refs.doyValue.textContent = "—";
-    refs.weekdayValue.textContent = "—";
-    refs.daySlider.value = "1";
-    return;
-  }
-  let y = normalizeEra(era,mag);
-  const ml = monthLengths(y);
-  const maxVisualDay = (y === 1582n && m === 10) ? 31 : ml[m-1];
+    function formatDate(value) {
+      if (!value) return "Publication";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "Publication";
 
-  let d = Number.parseInt(refs.dayInput.value,10);
-  if(!Number.isFinite(d) || d < 1) d = 1;
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      });
+    }
 
-  // For 1582 October, the deleted dates are unavailable.
-  if(y === 1582n && m === 10 && d >= 5 && d <= 14) d = 15;
-  const actualMax = maxVisualDay;
-  if(d > actualMax) d = actualMax;
+    function readingTime(text = "") {
+      const words = text.replace(/\s+/g, " ").trim().split(" ").filter(Boolean).length;
+      return `${Math.max(1, Math.ceil(words / 180))} min read`;
+    }
 
-  // For any month in the transition year, use source month profile.
-  if(!isValidMonthDay(y,m,d)){
-    d = Math.min(d, m === 10 ? 31 : ml[m-1]);
-    if(y === 1582n && m === 10 && d >=5 && d<=14) d=15;
-  }
-  setDayInputSafe(d);
+    function extractHtmlMeta(source = "") {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(source, "text/html");
 
-  const doy = dayOfYear(y,m,d);
-  const total = daysInYear(y);
-  const wd = weekdayIndex(y,m,d);
-  const janWd = jan1WeekdayIndex(y);
-  const leap = isLeapYear(y);
-  const system = calendarSystemForDate(y,m,d);
+      return {
+        title:
+          doc.querySelector("meta[name='title']")?.content ||
+          doc.querySelector("meta[property='og:title']")?.content ||
+          doc.querySelector("title")?.textContent ||
+          "",
+        description:
+          doc.querySelector("meta[name='description']")?.content ||
+          doc.querySelector("meta[property='og:description']")?.content ||
+          "",
+        category:
+          doc.querySelector("meta[name='category']")?.content || "",
+        image:
+          doc.querySelector("meta[property='og:image']")?.content ||
+          "",
+        body:
+          doc.querySelector("article")?.innerHTML ||
+          doc.querySelector("main")?.innerHTML ||
+          ""
+      };
+    }
 
-  current = {era,mag,y,m,d,doy,total,wd,janWd,leap,system};
+    function stripHtml(source = "") {
+      const doc = new DOMParser().parseFromString(source, "text/html");
+      return (doc.body?.textContent || "").replace(/\s+/g, " ").trim();
+    }
 
-  const seasons=seasonPairForDate(m,d);
-  refs.northernSeasonValue.textContent=seasons.nh;
-  refs.southernSeasonValue.textContent=seasons.sh;
-  refs.northernSeasonValue.title=`Northern Hemisphere: ${seasons.nh}`;
-  refs.southernSeasonValue.title=`Southern Hemisphere: ${seasons.sh}`;
+    async function getRepoIndex(repoName, branch = "main") {
+      try {
+        const response = await fetch(repoRawUrl(repoName, "index.html", branch), {
+          cache: "no-store"
+        });
 
-  // Slider always matches the actual compressed year.
-  refs.daySlider.min = "1";
-  refs.daySlider.max = String(total);
-  refs.daySlider.value = String(doy);
-  refs.daySlider.step = "1";
-  refs.daySlider.setAttribute("aria-valuemin", "1");
-  refs.daySlider.setAttribute("aria-valuemax", String(total));
-  refs.daySlider.setAttribute("aria-valuenow", String(doy));
-  refs.dayValue.textContent = `Day ${doy} / ${total}`;
+        if (!response.ok) return null;
 
-  // Display
-  refs.dateValue.textContent = fullDateText(era,mag,m,d);
-  refs.doyValue.textContent = `Day ${doy} / ${total}`;
-  refs.weekdayValue.textContent = WEEKDAYS[wd];
-  refs.yearTypeValue.textContent = y === 1582n ? "Transition Year" : (leap ? "Leap Year" : "Common Year");
-  refs.calendarSystemValue.textContent = system;
-  refs.monthDaysValue.textContent = `${m === 10 && y === 1582n ? 21 : ml[m-1]} calendar days`;
-  refs.remainingValue.textContent = String(total-doy);
-  refs.fullDateSummary.textContent = fullDateText(era,mag,m,d);
-  refs.jan1Summary.textContent = WEEKDAYS[janWd];
-  refs.monthDaySummary.textContent = `${d} / ${m === 10 && y === 1582n ? 21 : ml[m-1]}`;
-  refs.weekdayPosSummary.textContent = `${WEEKDAYS[wd]} • Day ${wd+1}`;
+        const source = await response.text();
+        const meta = extractHtmlMeta(source);
 
-  const eraNote = registryEraLabel(y);
-  refs.dateStatus.textContent =
-    `${displayYear(era,mag)} • Jan 1 ${WEEKDAYS[janWd]} • ` +
-    `${y===1582n ? "Transition Year" : (leap ? "Leap Year" : "Common Year")} • ${total} days • ${system} • ${eraNote}`;
+        return {
+          source,
+          meta
+        };
+      } catch (error) {
+        console.warn("Could not read repository index:", repoName, error);
+        return null;
+      }
+    }
 
-  if(!options.preserveSimulation){
-    simulationDay=Number(doy);
-  }
-  updateOrbit(options.preserveSimulation && Number.isFinite(simulationDay) ? simulationDay : doy,total);
-}
-
-/* Slider → date */
-refs.daySlider.addEventListener("input",()=>{
-  if(!current) return;
-  const doy = Number(refs.daySlider.value);
-  const dt = dateFromDOY(current.y,doy);
-  if(!dt) return;
-  refs.monthSelect.value = String(dt.m);
-  refs.dayInput.value = String(dt.d);
-  simulationDay=doy;
-  updateCalendarFromInputs();
-});
-function commitCalendarFields(){
-  // Normalize whitespace/commas and force a complete redraw of every label.
-  refs.yearInput.value = refs.yearInput.value.replace(/[^0-9]/g, "");
-  refs.dayInput.value = refs.dayInput.value.replace(/[^0-9]/g, "");
-  updateCalendarFromInputs();
-}
-
-refs.eraSelect.addEventListener("change", commitCalendarFields);
-refs.monthSelect.addEventListener("change", commitCalendarFields);
-refs.yearInput.addEventListener("input", () => {
-  // Update live while typing a complete numeric year, but never leave stale labels after Enter.
-  if (/^\d+$/.test(refs.yearInput.value.trim())) updateCalendarFromInputs();
-});
-refs.yearInput.addEventListener("change", commitCalendarFields);
-refs.dayInput.addEventListener("input", () => {
-  if (/^\d+$/.test(refs.dayInput.value.trim())) updateCalendarFromInputs();
-});
-refs.dayInput.addEventListener("change", commitCalendarFields);
-
-function calendarFieldEnter(event){
-  if(event.key !== "Enter") return;
-  event.preventDefault();
-  event.stopPropagation();
-  commitCalendarFields();
-  event.target.blur();
-}
-refs.yearInput.addEventListener("keydown", calendarFieldEnter);
-refs.dayInput.addEventListener("keydown", calendarFieldEnter);
-
-refs.eventSelect.addEventListener("change",()=>{
-  if(!refs.eventSelect.value) return;
-  const target = Number(refs.eventSelect.value);
-  refs.eraSelect.value = "CE";
-  refs.yearInput.value = "2026";
-  refs.daySlider.value = String(target);
-  simulationDay=target;
-  const dt = dateFromDOY(2026n,target);
-  refs.monthSelect.value = String(dt.m);
-  refs.dayInput.value = String(dt.d);
-  updateCalendarFromInputs();
-  refs.eventSelect.value = "";
-});
-
-/* =========================================================
-   ORBITAL VISUAL
-   Schematic annual mapping:
-   0° around March 20/21, then 90° June, 180° Sept,
-   270° Dec. This is a visualization mapping, not an
-   all-epochs ephemeris.
-========================================================= */
-
-const CENTER_X=600, CENTER_Y=280, RX=440, RY=205;
-const orbit = document.getElementById("orbit");
-const earthGroup = document.getElementById("earthGroup");
-const earthSpin = document.getElementById("earthSpin");
-const sunGroup = document.getElementById("sunGroup");
-const sunSurface = document.getElementById("sunSurface");
-const focus1 = document.getElementById("focus1");
-const focus2 = document.getElementById("focus2");
-const focus1Text = document.getElementById("focus1Text");
-const focus2Text = document.getElementById("focus2Text");
-const distanceLine = document.getElementById("distanceLine");
-const distanceRect = document.getElementById("distanceRect");
-const distanceText = document.getElementById("distanceText");
-const longitudeText = document.getElementById("longitudeText");
-const orbitalValue = refs.orbitalValue;
-const eventMarkers = document.getElementById("eventMarkers");
-
-function visualPosition(longitude){
-  const r=longitude*Math.PI/180;
-  return {x:CENTER_X+RX*Math.cos(r), y:CENTER_Y+RY*Math.sin(r)};
-}
-function setupFoci(){
-  const c=Math.sqrt(RX*RX-RY*RY);
-  const f1=CENTER_X-c, f2=CENTER_X+c;
-  focus1.setAttribute("cx",f1);focus1.setAttribute("cy",CENTER_Y);
-  focus2.setAttribute("cx",f2);focus2.setAttribute("cy",CENTER_Y);
-  focus1Text.setAttribute("x",f1);focus1Text.setAttribute("y",CENTER_Y-32);
-  focus2Text.setAttribute("x",f2);focus2Text.setAttribute("y",CENTER_Y-32);
-  sunGroup.setAttribute("transform",`translate(${f1},${CENTER_Y})`);
-}
-setupFoci();
-
-function actualDistanceAU(longitude){
-  const e=0.0167;
-  const peri=283;
-  const t=(longitude-peri)*Math.PI/180;
-  return (1-e*e)/(1+e*Math.cos(t));
-}
-const AU_KM=149.5978707;
-
-const EVENTS=[
-  {lon:283,name:"January Perihelion",month:"January",sub:"NH Winter • SH Summer",dx:72,dy:-42,anchor:"start"},
-  {lon:0,name:"March Equinox",month:"March",sub:"NH Spring • SH Autumn",dx:28,dy:-10,anchor:"start"},
-  {lon:90,name:"June Solstice",month:"June",sub:"NH Summer • SH Winter",dx:0,dy:52,anchor:"middle"},
-  {lon:103,name:"July Aphelion",month:"July",sub:"NH Summer • SH Winter",dx:-48,dy:42,anchor:"end"},
-  {lon:180,name:"September Equinox",month:"September",sub:"NH Autumn • SH Spring",dx:-28,dy:-10,anchor:"end"},
-  {lon:270,name:"December Solstice",month:"December",sub:"NH Winter • SH Summer",dx:0,dy:-42,anchor:"middle"}
-];
-function makeSvgEl(tag,attrs){
-  const e=document.createElementNS("http://www.w3.org/2000/svg",tag);
-  for(const [k,v] of Object.entries(attrs)) e.setAttribute(k,v);
-  return e;
-}
-function drawEvents(){
-  eventMarkers.innerHTML="";
-
-  const labels=[];
-  EVENTS.forEach(ev=>{
-    const p=visualPosition(ev.lon);
-
-    // Fixed-to-ellipse event point.
-    const marker=makeSvgEl("circle",{
-      cx:p.x,cy:p.y,r:5,
-      fill:(ev.name.includes("Aphelion")||ev.name.includes("Perihelion"))?"#f59e0b":"#94a3b8"
-    });
-    eventMarkers.appendChild(marker);
-
-    // Leader line keeps the label visibly anchored to the exact ellipse point.
-    const lx=p.x+ev.dx;
-    const ly=p.y+ev.dy;
-    const line=makeSvgEl("line",{
-      x1:p.x,y1:p.y,x2:lx,y2:ly,
-      stroke:"rgba(203,213,225,.55)","stroke-width":"1",
-      "stroke-linecap":"round"
-    });
-    eventMarkers.appendChild(line);
-
-    const group=makeSvgEl("g",{});
-    const text=makeSvgEl("text",{
-      x:lx,y:ly,
-      fill:(ev.name.includes("Aphelion")||ev.name.includes("Perihelion"))?"#fbbf24":"#cbd5e1",
-      "font-size":"12","font-weight":"700","text-anchor":ev.anchor,
-      "paint-order":"stroke","stroke":"#05070c","stroke-width":"4","stroke-linejoin":"round"
-    });
-    const title=makeSvgEl("tspan",{x:lx,dy:"0"});
-    title.textContent=ev.name;
-    const note=makeSvgEl("tspan",{x:lx,dy:"14",fill:"#94a3b8","font-size":"9","font-weight":"600"});
-    note.textContent=ev.sub;
-    text.appendChild(title); text.appendChild(note);
-    group.appendChild(text);
-    eventMarkers.appendChild(group);
-    labels.push({group,text,p,ev,lx,ly});
-  });
-
-  // Collision-safe pass: nudge labels vertically while preserving their
-  // leader-line connection to the ellipse. The event point never moves.
-  for(let pass=0; pass<8; pass++){
-    let changed=false;
-    for(let i=0;i<labels.length;i++){
-      const a=labels[i];
-      const ab=a.text.getBBox();
-      for(let j=0;j<i;j++){
-        const b=labels[j], bb=b.text.getBBox();
-        const overlap=ab.x < bb.x+bb.width && ab.x+ab.width > bb.x &&
-                      ab.y < bb.y+bb.height && ab.y+ab.height > bb.y;
-        if(overlap){
-          const direction=(a.ev.lon>=180? -1 : 1);
-          const shift=18*direction;
-          a.ly += shift;
-          a.text.setAttribute("y",a.ly);
-          a.text.querySelectorAll("tspan").forEach((t,idx)=>{
-            t.setAttribute("x",a.lx);
-            if(idx===0) t.setAttribute("dy","0");
-            else t.setAttribute("dy","14");
-          });
-          // update the leader line endpoint to the moved label
-          const line=a.group.previousSibling;
-          if(line && line.tagName.toLowerCase()==="line"){
-            line.setAttribute("x2",a.lx);
-            line.setAttribute("y2",a.ly);
-          }
-          changed=true;
+    async function loadRepositoryArticles() {
+      const response = await fetch(
+        `${GITHUB_API}/users/${encodeURIComponent(GITHUB_OWNER)}/repos?per_page=100&sort=updated`,
+        {
+          headers: {
+            "Accept": "application/vnd.github+json"
+          },
+          cache: "no-store"
         }
+      );
+
+      if (!response.ok) {
+        throw new Error(`GitHub repository request failed with HTTP ${response.status}`);
+      }
+
+      const repos = await response.json();
+
+      const publicRepos = repos.filter(repo =>
+        !repo.private &&
+        repo.name !== WEBSITE_REPO &&
+        !repo.fork &&
+        !repo.archived
+      );
+
+      const loaded = [];
+
+      for (const repo of publicRepos) {
+        const indexData = await getRepoIndex(repo.name, repo.default_branch || "main");
+        const parsed = indexData?.meta || {};
+
+        const title = parsed.title.trim() || humanizeRepoName(repo.name);
+        const description =
+          parsed.description.trim() ||
+          repo.description?.trim() ||
+          "Educational project published by Grand Learning Publication.";
+
+        const category =
+          parsed.category.trim() ||
+          detectCategory(repo);
+
+        loaded.push({
+          id: repo.full_name,
+          repoName: repo.name,
+          owner: repo.owner?.login || GITHUB_OWNER,
+          title,
+          category,
+          className: categoryClasses[category] || "civilization",
+          description,
+          date: formatDate(repo.updated_at),
+          sortDate: repo.updated_at || "",
+          read: indexData?.source ? readingTime(stripHtml(indexData.source)) : "Project",
+          repoUrl: repo.html_url,
+          homepage: repo.homepage || "",
+          sourceUrl: repo.html_url,
+          image: parsed.image || "",
+          hasIndex: Boolean(indexData?.source)
+        });
+      }
+
+      loaded.sort((a, b) => String(b.sortDate).localeCompare(String(a.sortDate)));
+
+      loaded.forEach((article, index) => {
+        article.number = String(index + 1).padStart(2, "0");
+      });
+
+      articles = loaded;
+      return loaded;
+    }
+
+    function showBlogStatus(message, type = "normal") {
+      const existing = document.getElementById("blogStatus");
+      if (!existing) return;
+
+      existing.textContent = message;
+      existing.dataset.type = type;
+      existing.style.display = message ? "block" : "none";
+    }
+
+    const postsEl = document.getElementById("posts");
+    const searchInput = document.getElementById("searchInput");
+    const filtersEl = document.getElementById("filters");
+    const modal = document.getElementById("articleModal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalMeta = document.getElementById("modalMeta");
+    const modalContent = document.getElementById("modalContent");
+
+    function renderPosts() {
+      const query = searchInput.value.trim().toLowerCase();
+
+      const filtered = articles.filter(article => {
+        const matchesFilter =
+          activeFilter === "All" || article.category === activeFilter;
+
+        const searchable = [
+          article.title,
+          article.category,
+          article.description,
+          article.repoName
+        ].join(" ").toLowerCase();
+
+        return matchesFilter && searchable.includes(query);
+      });
+
+      postsEl.innerHTML = "";
+
+      if (!articles.length) {
+        postsEl.innerHTML = `
+          <div class="empty" style="display:block">
+            <strong>No publication projects found.</strong><br />
+            Create a public GitHub repository under <code>${escapeHtml(GITHUB_OWNER)}</code>
+            and it will appear here automatically.
+          </div>
+        `;
+        return;
+      }
+
+      if (!filtered.length) {
+        postsEl.innerHTML = `
+          <div class="empty" style="display:block">
+            <strong>No articles or projects found.</strong><br />
+            Try another search term or topic.
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(article => {
+        const card = document.createElement("article");
+        card.className = "card";
+
+        const visual = article.image
+          ? `<div class="card-top" style="background-image:linear-gradient(135deg,rgba(16,35,63,.82),rgba(16,35,63,.28)),url('${escapeHtml(article.image)}');background-size:cover;background-position:center;">`
+          : `<div class="card-top ${article.className}">`;
+
+        const liveLink = article.homepage
+          ? `<a class="read" href="${escapeHtml(article.homepage)}" target="_blank" rel="noopener">Open project <span>↗</span></a>`
+          : `<a class="read" href="${escapeHtml(article.repoUrl)}" target="_blank" rel="noopener">View repository <span>↗</span></a>`;
+
+        card.innerHTML = `
+          ${visual}
+            <span class="badge">${escapeHtml(article.category)}</span>
+            <span class="number">${escapeHtml(article.number)}</span>
+          </div>
+          <div class="card-body">
+            <div class="meta">
+              <span>${escapeHtml(article.date)}</span>
+              <span>•</span>
+              <span>${escapeHtml(article.read)}</span>
+            </div>
+            <h3>${escapeHtml(article.title)}</h3>
+            <p>${escapeHtml(article.description)}</p>
+            ${liveLink}
+          </div>
+        `;
+
+        postsEl.appendChild(card);
+      });
+    }
+
+    async function openArticle(id) {
+      const article = articles.find(item => item.id === id);
+      if (!article) return;
+
+      modalMeta.innerHTML =
+        `<span>${escapeHtml(article.category)}</span>` +
+        `<span>•</span>` +
+        `<span>${escapeHtml(article.date)}</span>`;
+
+      modalTitle.textContent = article.title;
+
+      const projectButton = article.homepage
+        ? `<a class="btn btn-primary" href="${escapeHtml(article.homepage)}" target="_blank" rel="noopener">Open Live Project ↗</a>`
+        : "";
+
+      const repoButton =
+        `<a class="btn btn-secondary" href="${escapeHtml(article.repoUrl)}" target="_blank" rel="noopener">Open GitHub Repository ↗</a>`;
+
+      let projectText = escapeHtml(article.description);
+
+      // Read the repository index only for an informational preview.
+      // The project itself remains hosted in its own repository.
+      try {
+        const indexData = await getRepoIndex(article.repoName);
+        if (indexData?.source) {
+          const plain = stripHtml(indexData.source);
+          if (plain) {
+            projectText = escapeHtml(plain.slice(0, 1200));
+          }
+        }
+      } catch (error) {
+        console.warn(error);
+      }
+
+      modalContent.innerHTML = `
+        <p>${projectText}</p>
+        <p style="margin:22px 0;display:flex;flex-wrap:wrap;gap:10px;">
+          ${projectButton}
+          ${repoButton}
+        </p>
+        <h4>Published Project</h4>
+        <p>
+          This learning resource is stored in its own public GitHub repository.
+          Grand Learning Publication lists it here automatically, so new project
+          repositories can be added without editing this website.
+        </p>
+      `;
+
+      modal.classList.add("open");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeArticle() {
+      modal.classList.remove("open");
+      document.body.style.overflow = "";
+    }
+
+    document.getElementById("closeModal").addEventListener("click", closeArticle);
+
+    modal.addEventListener("click", event => {
+      if (event.target === modal) closeArticle();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") closeArticle();
+    });
+
+    searchInput.addEventListener("input", renderPosts);
+
+    function renderFilters() {
+      const categories = [...new Set(
+        articles.map(article => article.category).filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b));
+
+      filtersEl.innerHTML =
+        `<button class="filter ${activeFilter === "All" ? "active" : ""}" data-filter="All">All</button>`;
+
+      categories.forEach(category => {
+        const button = document.createElement("button");
+        button.className = `filter ${activeFilter === category ? "active" : ""}`;
+        button.dataset.filter = category;
+        button.textContent = category;
+        filtersEl.appendChild(button);
+      });
+
+      filtersEl.querySelectorAll(".filter").forEach(button => {
+        button.addEventListener("click", () => {
+          activeFilter = button.dataset.filter;
+          renderFilters();
+          renderPosts();
+        });
+      });
+    }
+
+    document.querySelectorAll("[data-topic]").forEach(topic => {
+      topic.addEventListener("click", () => {
+        activeFilter = topic.dataset.topic;
+        if (!articles.some(article => article.category === activeFilter)) {
+          activeFilter = "All";
+        }
+        renderFilters();
+        renderPosts();
+      });
+    });
+
+    document.getElementById("menuBtn").addEventListener("click", () => {
+      document.getElementById("navLinks").classList.toggle("open");
+    });
+
+    document.querySelectorAll(".nav-links a").forEach(link => {
+      link.addEventListener("click", () => {
+        document.getElementById("navLinks").classList.remove("open");
+        document.querySelectorAll(".nav-links a").forEach(a => a.classList.remove("active"));
+        link.classList.add("active");
+      });
+    });
+
+    document.getElementById("themeBtn").addEventListener("click", () => {
+      document.body.classList.toggle("reading-mode");
+      if (document.body.classList.contains("reading-mode")) {
+        document.body.style.background = "#ece7dc";
+      } else {
+        document.body.style.background = "";
+      }
+    });
+
+    document.getElementById("newsletterForm").addEventListener("submit", event => {
+      event.preventDefault();
+      document.getElementById("newsletterMessage").textContent =
+        "Demo subscription form. Connect this form to your preferred mailing service.";
+    });
+
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    async function initDynamicBlog() {
+      showBlogStatus("Loading Grand Learning Publication projects from GitHub…");
+
+      try {
+        await loadRepositoryArticles();
+
+        showBlogStatus(
+          articles.length
+            ? `${articles.length} publication project${articles.length === 1 ? "" : "s"} loaded automatically from GitHub`
+            : ""
+        );
+
+        renderFilters();
+        renderPosts();
+      } catch (error) {
+        console.error(error);
+        articles = [];
+        renderFilters();
+        renderPosts();
+
+        showBlogStatus(
+          "The GitHub projects could not be loaded. Make sure the repositories are public and the GitHub account name is correct.",
+          "error"
+        );
       }
     }
-    if(!changed) break;
-  }
-}
-drawEvents();
 
-/* Full-screen / expand control for the orbital visual */
-function isVisualFullscreen(){
-  return document.fullscreenElement === refs.orbitStage;
-}
-function updateFullscreenButton(){
-  const active=isVisualFullscreen() || refs.orbitStage.classList.contains("isExpanded");
-  refs.fullscreenButton.setAttribute("aria-label",active?"Exit Full Screen":"Full Screen / Expand orbital visual");
-  refs.fullscreenButton.title=active?"Exit Full Screen":"Full Screen / Expand";
-  refs.fullscreenButton.textContent=active?"⛶":"⛶";
-}
-async function toggleVisualFullscreen(){
-  try{
-    if(isVisualFullscreen()){
-      await document.exitFullscreen();
-    }else if(refs.orbitStage.classList.contains("isExpanded")){
-      refs.orbitStage.classList.remove("isExpanded");
-    }else if(document.fullscreenEnabled && refs.orbitStage.requestFullscreen){
-      await refs.orbitStage.requestFullscreen();
-    }else{
-      refs.orbitStage.classList.add("isExpanded");
-    }
-  }catch(err){
-    refs.orbitStage.classList.toggle("isExpanded");
-  }
-  updateFullscreenButton();
-}
-refs.fullscreenButton.addEventListener("click",toggleVisualFullscreen);
-document.addEventListener("fullscreenchange",()=>{
-  if(document.fullscreenElement !== refs.orbitStage) refs.orbitStage.classList.remove("isExpanded");
-  updateFullscreenButton();
-});
-updateFullscreenButton();
-
-function updateOrbit(doy,total){
-  const fraction=(doy-1)/Math.max(1,total);
-  let lon=((fraction*360)-79+360)%360; // makes ≈ day 79–80 near 0°
-  const pos=visualPosition(lon);
-  const au=actualDistanceAU(lon);
-  const km=au*AU_KM;
-
-  earthGroup.setAttribute("transform",`translate(${pos.x},${pos.y})`);
-  const sunX=Number(focus1.getAttribute("cx"));
-  const sunY=Number(focus1.getAttribute("cy"));
-  distanceLine.setAttribute("x1",sunX);distanceLine.setAttribute("y1",sunY);
-  distanceLine.setAttribute("x2",pos.x);distanceLine.setAttribute("y2",pos.y);
-
-  let ly=pos.y+27;
-  if(ly>505) ly=pos.y-24;
-  distanceRect.setAttribute("x",pos.x-37);
-  distanceRect.setAttribute("y",ly-11);
-  distanceRect.setAttribute("width",74);
-  distanceRect.setAttribute("height",16);
-  distanceText.setAttribute("x",pos.x);distanceText.setAttribute("y",ly+1);
-  distanceText.textContent=`${km.toFixed(1)} M km`;
-
-  orbitalValue.textContent=`${lon.toFixed(1)}°`;
-  longitudeText.textContent=`Orbital Position (visual model): ${lon.toFixed(1)}° • ${km.toFixed(1)} M km`;
-
-  // Self rotation. Red axis remains tilted; surface rotates around axis.
-  earthSpin.dataset.spin = "1";
-}
-
-/* Continuous animation
-   Fractional speeds use an independent floating-point simulationDay.
-   The range input remains an integer calendar-day control, but the
-   orbital position continues moving between calendar days.
-*/
-let playing=false;
-let raf=null;
-let earthAngle=0;
-let sunAngle=0;
-let simulationDay=null;
-let lastTimestamp=null;
-
-function setSimulationDayFromCalendar(){
-  if(current) simulationDay=Number(current.doy);
-}
-
-function animate(timestamp){
-  if(!playing){
-    lastTimestamp=null;
-    return;
-  }
-
-  if(lastTimestamp===null) lastTimestamp=timestamp;
-  const frameScale=Math.min(3, Math.max(0, (timestamp-lastTimestamp)/16.6666667));
-  lastTimestamp=timestamp;
-
-  // Orbital time warp: 0.25, 0.5, 1, 2.5 or 5 calendar days per nominal frame.
-  simulationDay += Number(refs.speedSelect.value) * frameScale;
-
-  const total=Number(refs.daySlider.max);
-  if(simulationDay>total) simulationDay=1 + ((simulationDay-1) % total);
-
-  // Continuous fractional orbital motion.
-  updateOrbit(simulationDay,total);
-
-  // Calendar labels change only when the simulated day crosses an integer.
-  const displayDoy=Math.max(1,Math.min(total,Math.round(simulationDay)));
-  if(!current || displayDoy!==current.doy){
-    const dt=dateFromDOY(current.y,displayDoy);
-    if(dt){
-      refs.monthSelect.value=String(dt.m);
-      refs.dayInput.value=String(dt.d);
-      updateCalendarFromInputs({preserveSimulation:true});
-      updateOrbit(simulationDay,total);
-    }
-  }
-
-  // Keep the slider and visible Day X / total synchronized with the fractional simulation.
-  refs.daySlider.value=String(displayDoy);
-  refs.daySlider.setAttribute("aria-valuenow",String(displayDoy));
-  refs.dayValue.textContent=`Day ${displayDoy} / ${total}`;
-
-  // Self-rotation is independent of the orbital time-warp choice.
-  earthAngle=(earthAngle + 7.0*frameScale)%360;
-  sunAngle=(sunAngle + 0.9*frameScale)%360;
-  earthSpin.setAttribute("transform",`rotate(${earthAngle})`);
-  sunSurface.setAttribute("transform",`rotate(${sunAngle})`);
-
-  raf=requestAnimationFrame(animate);
-}
-
-refs.playButton.addEventListener("click",()=>{
-  playing=!playing;
-  refs.playButton.textContent=playing?"❚❚":"▶";
-  if(playing){
-    setSimulationDayFromCalendar();
-    lastTimestamp=null;
-    raf=requestAnimationFrame(animate);
-  }else if(raf){
-    cancelAnimationFrame(raf);
-    raf=null;
-    lastTimestamp=null;
-  }
-});
-
-/* Keyboard date stepping */
-document.addEventListener("keydown",e=>{
-  if(["INPUT","SELECT","TEXTAREA"].includes(document.activeElement.tagName) && e.code!=="Space") return;
-  if(e.key==="ArrowRight"||e.key==="ArrowLeft"){
-    e.preventDefault();
-    const delta=e.key==="ArrowRight"?1:-1;
-    const total=Number(refs.daySlider.max);
-    let next=Number(refs.daySlider.value)+delta;
-    if(next>total) next=1;
-    if(next<1) next=total;
-    refs.daySlider.value=String(next);
-    const dt=dateFromDOY(current.y,next);
-    refs.monthSelect.value=String(dt.m);
-    refs.dayInput.value=String(dt.d);
-    updateCalendarFromInputs();
-  }
-  if(e.code==="Space" && !["INPUT","SELECT","TEXTAREA"].includes(document.activeElement.tagName)){
-    e.preventDefault(); refs.playButton.click();
-  }
-});
-
-/* Initial exact example requested */
-updateCalendarFromInputs();
-</script>
+    initDynamicBlog();
+  </script>
 </body>
 </html>
