@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Earth Annual Orbital Cycle — Historical Calendar</title>
+<style>
+:root{
+  --bg:#02050a;
+  --panel:#0b111e;
+  --visual:#07101d;
+  --card:#111827;
+  --line:rgba(148,163,184,.20);
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+  --white:#f8fafc;
+  --ink:#111827;
+  --blue:#2563eb;
+  --gold:#fbbc04;
+  --green:#34a853;
+  --red:#ef4444;
+  --annual-h:128px;
+  --controls-h:248px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;min-height:100%;background:var(--bg);font-family:Arial,Helvetica,sans-serif;overflow-x:hidden;overflow-y:auto;scrollbar-gutter:stable}
+body{min-height:100dvh;display:block}
+button,input,select{font:inherit}
+#app{
+  width:100%;min-width:320px;min-height:100dvh;height:auto;
+  display:grid;
+  /* Content-driven rows prevent description collapse when the page is scrolled
+     or when mobile browser chrome/keyboard changes the viewport height. */
+  /* Compact-by-default visual row. The ⛶ control expands only the orbital visual when needed. */
+  grid-template-rows:78px auto auto auto;
+  background:var(--panel);overflow:visible;
+}
+#app > *{width:100%;min-width:0}
+#header{
+  position:relative;z-index:50;display:flex;align-items:center;justify-content:center;
+  padding:8px 92px;background:#0b111e;border-bottom:1px solid var(--line)
+}
+.headerCard{
+  width:min(940px,100%);text-align:center;padding:9px 18px;
+  border:1px solid var(--line);border-radius:12px;
+  background:linear-gradient(180deg,rgba(30,41,59,.82),rgba(15,23,42,.75));
+  box-shadow:0 8px 24px rgba(0,0,0,.18)
+}
+.headerTitle{margin:0;color:#fff;font-size:clamp(16px,1.55vw,25px);font-weight:700;line-height:1.1}
+.headerSub{margin:5px 0 0;color:#94a3b8;font-size:clamp(9px,.72vw,12px);line-height:1.25}
+#modelInfo{
+  min-height:96px;
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  grid-template-rows:minmax(96px,auto);
+  align-items:stretch;
+  background:#0a1220;
+  color:#e5e7eb;
+  border-bottom:1px solid #263244;
+  overflow:visible;
+}
+.modelInfoCell{
+  min-width:0;
+  min-height:0;
+  padding:10px 11px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+  align-items:flex-start;
+  border-right:1px solid #263244;
+  overflow:visible;
+}
+.modelInfoCell:last-child{border-right:none}
+.modelInfoTitle{
+  flex:0 0 auto;
+  color:#dbeafe;
+  font-size:clamp(8px,.66vw,11px);
+  font-weight:700;
+  margin-bottom:4px;
+  white-space:nowrap;
+  line-height:1.1
+}
+.modelInfoText{
+  flex:1 1 auto;
+  width:100%;
+  color:#94a3b8;
+  font-size:clamp(8px,.58vw,10px);
+  line-height:1.32;
+  white-space:normal;
+  overflow:visible;
+  overflow-wrap:anywhere;
+  word-break:normal;
+}
+#orbitStage{
+  min-width:0;min-height:0;display:grid;grid-template-rows:minmax(220px,1fr) auto;
+  background:#05070c;border-bottom:1px solid #263244;overflow:visible;
+}
+#orbitStage > *{min-width:0}
+#visualArea{
+  height:clamp(220px,24vw,360px);min-height:220px;position:relative;overflow:hidden;background:
+    radial-gradient(circle at 50% 48%,#132037 0%,#0a111e 52%,#05080e 100%);
+}
+#orbitSvg{display:block;width:100%;height:100%}
+#visualArea{--visual-control-size:42px}
+#playButton,#fullscreenButton{
+  position:absolute;top:12px;z-index:30;
+  width:var(--visual-control-size);height:var(--visual-control-size);
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:50%;background:rgba(15,23,42,.92);color:#fff;
+  cursor:pointer;display:grid;place-items:center;
+  box-shadow:0 8px 20px rgba(0,0,0,.25);
+  backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)
+}
+#playButton{right:14px;font-size:15px}
+#fullscreenButton{left:14px;font-size:19px;line-height:1}
+#playButton:hover,#fullscreenButton:hover{background:#1e293b}
+#playButton:focus-visible,#fullscreenButton:focus-visible{outline:2px solid #93c5fd;outline-offset:2px}
+#orbitStage:fullscreen{
+  width:100vw;height:100vh;min-height:100vh;margin:0;background:#05070c;z-index:9999;
+  display:grid;grid-template-rows:minmax(0,1fr) auto;overflow:auto;
+}
+/* Fallback expand mode for browsers without the Fullscreen API. */
+#orbitStage.isExpanded{
+  position:fixed;inset:0;width:100vw;height:100vh;min-height:100vh;margin:0;background:#05070c;z-index:9999;
+  display:grid;grid-template-rows:minmax(0,1fr) auto;overflow:auto;
+}
+#orbitStage:fullscreen #visualArea,#orbitStage.isExpanded #visualArea{
+  height:auto;min-height:0;
+}
+#orbitStage:fullscreen #orbitSvg,#orbitStage.isExpanded #orbitSvg{width:100%;height:100%}
+#orbitStage:fullscreen #annualGrid,#orbitStage.isExpanded #annualGrid{
+  position:relative;bottom:auto;left:auto;width:100%;min-height:0;height:auto;
+}
+#orbitStage:fullscreen #playButton,#orbitStage:fullscreen #fullscreenButton,
+#orbitStage.isExpanded #playButton,#orbitStage.isExpanded #fullscreenButton{top:18px}
+#orbitStage:fullscreen #playButton,#orbitStage.isExpanded #playButton{right:18px}
+#orbitStage:fullscreen #fullscreenButton,#orbitStage.isExpanded #fullscreenButton{left:18px}
+
+#annualGrid{
+  min-height:128px;height:auto;background:#0f172a;color:#fff;border-top:1px solid #263244;border-bottom:1px solid #263244;
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-rows:minmax(64px,auto);overflow:visible
+}
+.annualCell{
+  min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:7px 8px;border-right:1px solid #263244;text-align:center
+}
+.annualCell:last-child{border-right:none}
+.annualCell:nth-child(5n){border-right:none}
+.annualLabel{color:#94a3b8;font-size:clamp(8px,.66vw,11px);margin-bottom:5px;white-space:nowrap}
+.annualValue{color:#f8fafc;font-size:clamp(10px,.86vw,15px);font-weight:700;line-height:1.2;white-space:normal}
+.annualValue.accent{color:#93c5fd}
+.annualValue.gold{color:#fde68a}
+.annualValue.season{color:#c4b5fd}
+.annualValue.seasonOpp{color:#67e8f9}
+#controlArea{
+  min-height:248px;height:auto;background:var(--white);color:var(--ink);display:grid;
+  grid-template-rows:auto auto minmax(120px,auto);border-top:1px solid #d5dae2;overflow:visible
+}
+#calendarRow{
+  display:grid;grid-template-columns:1.0fr 1.2fr 1.2fr 1.2fr 2.5fr;gap:10px;
+  min-height:76px;padding:10px 14px;border-bottom:1px solid #d9dee7;align-items:end
+}
+.controlBlock{min-width:0}
+.controlLabel{display:block;color:#64748b;font-size:clamp(8px,.68vw,11px);margin-bottom:4px}
+.controlInput,.controlSelect{
+  width:100%;height:34px;border:1px solid #d7dce4;border-radius:8px;background:#fff;color:#111827;
+  padding:0 9px;outline:none;font-size:clamp(9px,.75vw,12px)
+}
+.controlInput:focus,.controlSelect:focus{border-color:#93c5fd;box-shadow:0 0 0 2px rgba(37,99,235,.12)}
+.yearWrap{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#dateStatus{min-width:0;align-self:end;height:34px;padding:8px 10px;border-radius:8px;background:#eef2f7;overflow:hidden;
+  color:#334155;font-size:clamp(9px,.74vw,12px);white-space:nowrap;text-overflow:ellipsis}
+#summary{
+  display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #d9dee7
+}
+.summaryItem{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #d9dee7}
+.summaryItem:last-child{border-right:none}
+.summaryLabel{color:#64748b;font-size:clamp(8px,.66vw,11px);margin-bottom:3px}
+.summaryValue{color:#111827;font-size:clamp(10px,.82vw,14px);font-weight:700;white-space:nowrap}
+#timelineAndMenus{min-width:0;min-height:124px;padding:8px 14px;display:grid;grid-template-rows:26px auto;gap:6px}
+.sliderRow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+#daySlider{width:100%;accent-color:#2563eb;cursor:pointer}
+#dayValue{width:92px;text-align:right;color:#111827;font-size:clamp(9px,.72vw,12px);font-weight:700}
+#menuRow{display:grid;grid-template-columns:1fr 2fr 2fr;gap:10px;align-items:end}
+.menuBlock{min-width:0}
+.smallNote{color:#64748b;font-size:8px;align-self:center}
+
+@media (max-width:1100px){
+  :root{--annual-h:110px;--controls-h:270px}
+  #app{grid-template-rows:68px auto auto auto}
+  #orbitStage{grid-template-rows:minmax(200px,clamp(200px,24vw,300px)) auto}
+  #modelInfo{min-height:168px;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(84px,auto))}
+  .modelInfoCell:nth-child(3n){border-right:none}
+  .modelInfoCell:nth-child(n+4){border-top:1px solid #263244}
+  .modelInfoText{overflow:visible;display:block;-webkit-line-clamp:unset}
+  #annualGrid{min-height:110px;grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-rows:minmax(55px,auto);height:auto}
+  .annualCell:nth-child(5n){border-right:none}
+  .annualCell:nth-child(n+6){border-top:1px solid #263244}
+  #calendarRow{grid-template-columns:1fr 1.25fr 1.25fr 1.25fr;grid-template-areas:"era year month day" "status status status status";height:100%}
+  #eraBlock{grid-area:era}#yearBlock{grid-area:year}#monthBlock{grid-area:month}#dayBlock{grid-area:day}#dateStatus{grid-area:status}
+  #controlArea{grid-template-rows:auto auto minmax(140px,auto)}
+}
+@media (max-width:700px){
+  :root{--annual-h:300px;--controls-h:315px}
+  #app{grid-template-rows:68px auto auto auto}
+  #orbitStage{grid-template-rows:minmax(200px,220px) auto}
+  #header{padding:6px 52px}
+  .headerCard{padding:7px 12px}
+  .headerSub{font-size:8px}
+  #playButton,#fullscreenButton{top:8px;width:38px;height:38px}
+  #playButton{right:8px;font-size:13px}
+  #fullscreenButton{left:8px;font-size:17px}
+  #modelInfo{min-height:240px;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(80px,auto))}
+  .modelInfoCell:nth-child(2n){border-right:none}
+  .modelInfoCell:nth-child(n+3){border-top:1px solid #263244}
+  .modelInfoText{-webkit-line-clamp:unset;overflow:visible;display:block}
+  #annualGrid{min-height:300px;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(58px,auto);height:auto;overflow:visible}
+  .annualCell:nth-child(5n){border-right:1px solid #263244}
+  .annualCell:nth-child(2n){border-right:none}
+  .annualCell:nth-child(n+3){border-top:1px solid #263244}
+  #calendarRow{padding:8px;grid-template-columns:1fr 1.2fr 1.2fr 1.2fr;gap:6px;height:100%}
+  .controlInput,.controlSelect,#dateStatus{height:31px}
+  #controlArea{grid-template-rows:auto auto minmax(155px,auto)}
+  #menuRow{grid-template-columns:1fr;gap:5px;align-items:stretch}
+  #timelineAndMenus{padding:7px 8px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header id="header">
+    <div class="headerCard">
+      <h1 class="headerTitle">Earth Annual Orbital Cycle</h1>
+      <p class="headerSub">Historical Calendar • BCE / CE • Day of Year • Weekday • Earth–Sun Distance • Seasons • Orbital Position</p>
+    </div>
+  </header>
+
+  <section id="modelInfo" aria-label="Calendar and orbital model descriptions">
+    <div class="modelInfoCell">
+      <div class="modelInfoTitle">Calendar Engine</div>
+      <div class="modelInfoText">Follows the supplied historical registry rules for BCE/CE year length, leap years, month lengths, weekdays, and the 1582 calendar transition. Season labels follow the displayed equinox/solstice cycle.</div>
+    </div>
+    <div class="modelInfoCell">
+      <div class="modelInfoTitle">Date Calculation</div>
+      <div class="modelInfoText">Uses integer calendar arithmetic rather than the browser Date object, so Day of Year and 365/366 remain stable for BCE and large years.</div>
+    </div>
+    <div class="modelInfoCell">
+      <div class="modelInfoTitle">Sun F₁</div>
+      <div class="modelInfoText">The Sun is drawn at F₁, the first focus of the displayed ellipse. This focal geometry is intentionally exaggerated for visibility.</div>
+    </div>
+    <div class="modelInfoCell">
+      <div class="modelInfoTitle">Empty Focus F₂</div>
+      <div class="modelInfoText">F₂ is the second focus of the displayed ellipse and contains no astronomical body. Its marker remains fixed to the ellipse geometry.</div>
+    </div>
+    <div class="modelInfoCell">
+      <div class="modelInfoTitle">Earth Axial Tilt</div>
+      <div class="modelInfoText">Earth is shown with a 23.44° axial tilt. The tilted red axis remains attached to Earth while the surface rotates.</div>
+    </div>
+    <div class="modelInfoCell">
+      <div class="modelInfoTitle">Visual Model</div>
+      <div class="modelInfoText">Ellipse eccentricity is exaggerated for visibility. Earth, F₁, F₂, axial tilt and event positions stay anchored to the displayed ellipse, while Northern and Southern Hemisphere seasons are shown as opposite seasonal states.</div>
+    </div>
+  </section>
+
+  <section id="orbitStage" aria-label="Orbital visual and annual orbital position">
+    <main id="visualArea">
+    <button id="fullscreenButton" type="button" aria-label="Full Screen / Expand orbital visual" title="Full Screen / Expand the orbital visual">⛶</button>
+    <button id="playButton" type="button" aria-label="Play or pause animation" title="Play / Pause">▶</button>
+<svg id="orbitSvg" viewBox="0 0 1200 560" preserveAspectRatio="xMidYMid meet" role="img"
+         aria-label="Earth annual orbital cycle with Sun F1, Empty Focus F2, equinoxes, solstices, perihelion, aphelion, and opposite Northern and Southern Hemisphere seasons">
+
+      <rect width="1200" height="560" fill="#05070c"/>
+      <line x1="70" y1="280" x2="1130" y2="280" stroke="rgba(255,255,255,.055)" stroke-width="1" stroke-dasharray="4 4"/>
+      <line x1="600" y1="35" x2="600" y2="525" stroke="rgba(255,255,255,.055)" stroke-width="1" stroke-dasharray="4 4"/>
+
+      <ellipse id="orbit" cx="600" cy="280" rx="440" ry="205" fill="none"
+               stroke="rgba(255,255,255,.20)" stroke-width="2" stroke-dasharray="7 6">
+        <title>Earth orbital ellipse; eccentricity is exaggerated for visibility</title>
+      </ellipse>
+      <line id="majorAxis" x1="160" y1="280" x2="1040" y2="280"
+            stroke="rgba(255,255,255,.08)" stroke-width="1" stroke-dasharray="6 6"/>
+
+      <circle id="focus1" r="6" fill="#fbbc04"><title>Sun F₁ — first focus of the visual ellipse</title></circle>
+      <text id="focus1Text" fill="#fde68a" font-size="15" font-weight="700" text-anchor="middle">Sun F₁</text>
+
+      <circle id="focus2" r="5" fill="#94a3b8"><title>Empty Focus F₂ — second focus of the visual ellipse</title></circle>
+      <text id="focus2Text" fill="#cbd5e1" font-size="14" font-weight="700" text-anchor="middle">Empty Focus F₂</text>
+
+      <g id="eventMarkers"></g>
+
+      <!-- Sun -->
+      <g id="sunGroup">
+        <circle r="58" fill="rgba(251,188,4,.05)"/>
+        <circle r="43" fill="rgba(251,188,4,.09)"/>
+        <g id="sunSurface">
+          <circle r="28" fill="#fbbc04"/>
+          <circle r="20" fill="#ffd45c"/>
+          <path d="M-19,-5 C-8,-18 6,-18 18,-4 C8,6 -7,12 -19,-5Z" fill="rgba(255,150,0,.32)"/>
+          <path d="M-11,10 C-2,3 8,4 14,12 C2,19 -7,18 -11,10Z" fill="rgba(255,120,0,.30)"/>
+          <circle cx="-10" cy="-9" r="3.2" fill="rgba(208,78,0,.42)"/>
+          <circle cx="10" cy="-6" r="2.4" fill="rgba(208,78,0,.38)"/>
+          <circle cx="4" cy="12" r="2.8" fill="rgba(208,78,0,.36)"/>
+          <path d="M-31,0 A31,31 0 0 1 21,-23" fill="none" stroke="rgba(255,214,92,.65)" stroke-width="2" stroke-linecap="round"/>
+          <path d="M20,-23 l-6,1 l3,5" fill="none" stroke="rgba(255,214,92,.65)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </g>
+
+      <line id="distanceLine" stroke="rgba(251,188,4,.34)" stroke-width="2"/>
+
+      <!-- Earth -->
+      <g id="earthGroup">
+        <g id="earthSpin">
+          <circle r="23" fill="rgba(59,130,246,.13)"/>
+          <circle r="15" fill="#1a73e8"/>
+          <path d="M-8-7 Q-4-12 2-9 Q8-7 8-2 Q5 2 0 1 Q-2 5-7 2 Q-10 0-8-7Z" fill="#34a853"/>
+          <path d="M-4 4 Q0 2 6 6 Q5 10 0 10 Q-5 9-4 4Z" fill="#34a853"/>
+          <path d="M0-15 A15 15 0 0 0 0 15 L15 15 L15-15Z" fill="rgba(0,0,0,.48)"/>
+        </g>
+        <g transform="rotate(23.44)">
+          <line x1="0" y1="-27" x2="0" y2="27" stroke="#ef4444" stroke-width="1.5"/>
+          <circle cx="0" cy="-27" r="1.8" fill="#ef4444"/>
+          <circle cx="0" cy="27" r="1.8" fill="#ef4444"/>
+          <text x="0" y="-32" fill="#ef4444" font-size="9" text-anchor="middle">N</text>
+          <text x="0" y="39" fill="#ef4444" font-size="9" text-anchor="middle">S</text>
+        </g>
+      </g>
+
+      <g id="distanceLabel">
+        <rect id="distanceRect" rx="4" fill="rgba(15,23,42,.82)"/>
+        <text id="distanceText" fill="#e2e8f0" font-size="10" font-weight="600" text-anchor="middle"/>
+      </g>
+
+      <text id="longitudeText" x="20" y="535" fill="#cbd5e1" font-size="12" font-weight="600"/>
+</svg>
+    </main>
+
+    <!-- ANNUAL GRID: stays directly under the visual and moves inside fullscreen -->
+    <section id="annualGrid" aria-label="Annual Orbital Position and Hemisphere Seasons">
+    <div class="annualCell"><div class="annualLabel">Calendar Date</div><div id="dateValue" class="annualValue accent">April 12, 2026 CE</div></div>
+    <div class="annualCell"><div class="annualLabel">Northern Hemisphere</div><div id="northernSeasonValue" class="annualValue season">Spring</div></div>
+    <div class="annualCell"><div class="annualLabel">Southern Hemisphere</div><div id="southernSeasonValue" class="annualValue seasonOpp">Autumn</div></div>
+    <div class="annualCell"><div class="annualLabel">Day of Year</div><div id="doyValue" class="annualValue">Day 102 / 365</div></div>
+    <div class="annualCell"><div class="annualLabel">Weekday</div><div id="weekdayValue" class="annualValue">Sunday</div></div>
+    <div class="annualCell"><div class="annualLabel">Year Type</div><div id="yearTypeValue" class="annualValue">Common Year</div></div>
+    <div class="annualCell"><div class="annualLabel">Calendar System</div><div id="calendarSystemValue" class="annualValue">Gregorian System</div></div>
+    <div class="annualCell"><div class="annualLabel">Days in Month</div><div id="monthDaysValue" class="annualValue">30 days</div></div>
+    <div class="annualCell"><div class="annualLabel">Days Remaining</div><div id="remainingValue" class="annualValue">263</div></div>
+    <div class="annualCell"><div class="annualLabel">Orbital Position</div><div id="orbitalValue" class="annualValue gold">22.4°</div></div>
+    </section>
+  </section>
+
+  <!-- FIXED BOTTOM CONTROLS -->
+  <section id="controlArea" aria-label="Calendar and simulation controls">
+
+    <div id="calendarRow">
+      <div id="eraBlock" class="controlBlock">
+        <label class="controlLabel" for="eraSelect">Era</label>
+        <select id="eraSelect" class="controlSelect">
+          <option value="BCE">BCE</option>
+          <option value="CE" selected>CE</option>
+        </select>
+      </div>
+
+      <div id="yearBlock" class="controlBlock">
+        <label class="controlLabel" for="yearInput">Year</label>
+        <input id="yearInput" class="controlInput" inputmode="numeric" autocomplete="off" value="2026" aria-label="Calendar year">
+      </div>
+
+      <div id="monthBlock" class="controlBlock">
+        <label class="controlLabel" for="monthSelect">Month</label>
+        <select id="monthSelect" class="controlSelect">
+          <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+          <option value="4" selected>April</option><option value="5">May</option><option value="6">June</option>
+          <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+          <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+        </select>
+      </div>
+
+      <div id="dayBlock" class="controlBlock">
+        <label class="controlLabel" for="dayInput">Day</label>
+        <input id="dayInput" class="controlInput" inputmode="numeric" autocomplete="off" value="12" min="1" aria-label="Calendar day">
+      </div>
+
+      <div id="dateStatus">2026 CE • Thursday January 1 • Common Year • 365 days • Gregorian System</div>
+    </div>
+
+    <div id="summary">
+      <div class="summaryItem"><div class="summaryLabel">Full Date</div><div id="fullDateSummary" class="summaryValue">April 12, 2026 CE</div></div>
+      <div class="summaryItem"><div class="summaryLabel">January 1 Weekday</div><div id="jan1Summary" class="summaryValue">Thursday</div></div>
+      <div class="summaryItem"><div class="summaryLabel">Month Day</div><div id="monthDaySummary" class="summaryValue">12 / 30</div></div>
+      <div class="summaryItem"><div class="summaryLabel">Weekday Position</div><div id="weekdayPosSummary" class="summaryValue">Sunday • Day 7</div></div>
+    </div>
+
+    <div id="timelineAndMenus">
+      <div class="sliderRow">
+        <input id="daySlider" type="range" min="1" max="365" step="1" value="102" aria-label="Day of year">
+        <span id="dayValue">Day 102 / 365</span>
+      </div>
+
+      <div id="menuRow">
+        <div class="menuBlock">
+          <label class="controlLabel" for="speedSelect">Simulation Time Warp Speed <span style="color:#94a3b8">(continuous)</span></label>
+          <select id="speedSelect" class="controlSelect">
+            <option value="0.25">0.25 Days / Frame</option>
+            <option value="0.5">0.5 Days / Frame</option>
+            <option value="1" selected>1 Day / Frame</option>
+            <option value="2.5">2.5 Days / Frame</option>
+            <option value="5">5 Days / Frame</option>
+          </select>
+        </div>
+
+        <div class="menuBlock">
+          <label class="controlLabel" for="eventSelect">2026 Solstice / Equinox / Perihelion / Aphelion Jumps</label>
+          <select id="eventSelect" class="controlSelect">
+            <option value="">Jump to 2026 milestone…</option>
+            <option value="3">Perihelion — January 3, 2026</option>
+            <option value="79">March Equinox — March 20, 2026</option>
+            <option value="172">June Solstice — June 21, 2026</option>
+            <option value="187">Aphelion — July 6, 2026</option>
+            <option value="266">September Equinox — September 23, 2026</option>
+            <option value="355">December Solstice — December 21, 2026</option>
+          </select>
+        </div>
+
+        <div class="smallNote">
+          Enter a BCE/CE year and press Enter to commit it. Every calendar label updates together: Full Date, Northern Hemisphere season, Southern Hemisphere season, Day of Year, Weekday, Year Type, Calendar System, month days, slider maximum, and weekday summaries. Calculations use integer arithmetic without JavaScript Date().
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================
+   SUPPLIED REGISTRY MODEL
+   ---------------------------------------------------------
+   10,000 BCE–46 BCE : Proleptic Gregorian
+   45 BCE–1581 CE    : Julian
+   1582 CE           : 355-day transition year
+   1583 CE onward    : Gregorian
+========================================================= */
+
+const WEEKDAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const GREG_COMMON = [31,28,31,30,31,30,31,31,30,31,30,31];
+const GREG_LEAP   = [31,29,31,30,31,30,31,31,30,31,30,31];
+
+const refs = {
+  eraSelect: document.getElementById("eraSelect"),
+  yearInput: document.getElementById("yearInput"),
+  monthSelect: document.getElementById("monthSelect"),
+  dayInput: document.getElementById("dayInput"),
+  dateStatus: document.getElementById("dateStatus"),
+  dateValue: document.getElementById("dateValue"),
+  northernSeasonValue: document.getElementById("northernSeasonValue"),
+  southernSeasonValue: document.getElementById("southernSeasonValue"),
+  doyValue: document.getElementById("doyValue"),
+  weekdayValue: document.getElementById("weekdayValue"),
+  yearTypeValue: document.getElementById("yearTypeValue"),
+  calendarSystemValue: document.getElementById("calendarSystemValue"),
+  monthDaysValue: document.getElementById("monthDaysValue"),
+  remainingValue: document.getElementById("remainingValue"),
+  orbitalValue: document.getElementById("orbitalValue"),
+  fullDateSummary: document.getElementById("fullDateSummary"),
+  jan1Summary: document.getElementById("jan1Summary"),
+  monthDaySummary: document.getElementById("monthDaySummary"),
+  weekdayPosSummary: document.getElementById("weekdayPosSummary"),
+  daySlider: document.getElementById("daySlider"),
+  dayValue: document.getElementById("dayValue"),
+  speedSelect: document.getElementById("speedSelect"),
+  eventSelect: document.getElementById("eventSelect"),
+  playButton: document.getElementById("playButton"),
+  fullscreenButton: document.getElementById("fullscreenButton"),
+  orbitStage: document.getElementById("orbitStage"),
+  visualArea: document.getElementById("visualArea")
+};
+
+function toBigIntYear(text){
+  const s = String(text).trim().replace(/,/g,"");
+  if(!/^\d+$/.test(s) || s === "0") return null;
+  return BigInt(s);
+}
+function normalizeEra(era, year){
+  // No year zero: 1 BCE = astronomical year 0, 2 BCE = -1, etc.
+  return era === "BCE" ? (1n - year) : year;
+}
+function isGregorianLeap(y){
+  const r4 = y % 4n;
+  const r100 = y % 100n;
+  const r400 = y % 400n;
+  return r4 === 0n && (r100 !== 0n || r400 === 0n);
+}
+function isJulianLeap(y){
+  return y % 4n === 0n;
+}
+function calendarSystem(y){
+  if(y <= -45n) return "Proleptic Gregorian System";
+  if(y <= 1581n) return "Julian System";
+  if(y === 1582n) return "Gregorian Transition Year";
+  return "Gregorian System";
+}
+function registryEraLabel(y){
+  if(y <= -45n) return "Proleptic Gregorian BCE";
+  if(y <= 1581n) return "ERA 2 • 45 BCE to 1581 CE";
+  if(y === 1582n) return "ERA 3 • 1582 CE Transition";
+  return "ERA 4 • 1583 CE onward";
+}
+function isLeapYear(y){
+  if(y === 1582n) return false;
+  if(y <= -45n) return isGregorianLeap(y);
+  if(y <= 1581n) return isJulianLeap(absBig(y));
+  return isGregorianLeap(y);
+}
+function absBig(x){ return x < 0n ? -x : x; }
+
+function monthLengths(y){
+  if(y === 1582n) return [31,28,31,30,31,30,31,31,30,21,30,31];
+  if(y <= -45n) return isGregorianLeap(y) ? GREG_LEAP.slice() : GREG_COMMON.slice();
+  if(y <= 1581n) return isJulianLeap(absBig(y)) ? GREG_LEAP.slice() : GREG_COMMON.slice();
+  return isGregorianLeap(y) ? GREG_LEAP.slice() : GREG_COMMON.slice();
+}
+function daysInYear(y){
+  if(y === 1582n) return 355;
+  return isLeapYear(y) ? 366 : 365;
+}
+
+/* 1582 special date validity and compressed day-of-year */
+function isValidMonthDay(y,m,d){
+  const ml = monthLengths(y);
+  if(m < 1 || m > 12 || d < 1) return false;
+  if(y === 1582n && m === 10 && d >= 5 && d <= 14) return false;
+  return d <= ml[m-1] + ((y === 1582n && m === 10) ? 10 : 0);
+}
+function dayOfYear(y,m,d){
+  if(y === 1582n){
+    if(m < 10) return GREG_COMMON.slice(0,m-1).reduce((a,b)=>a+b,0) + d;
+    if(m === 10) return d <= 4 ? 273 + d : 273 + (d - 10);
+    const base = 294; // Oct 31 is compressed Day 294 after the 10 deleted dates
+    return base + GREG_COMMON.slice(10,m-1).reduce((a,b)=>a+b,0) + d;
+  }
+  const ml = monthLengths(y);
+  let total = d;
+  for(let i=0;i<m-1;i++) total += ml[i];
+  return total;
+}
+function dateFromDOY(y,doy){
+  const total = daysInYear(y);
+  if(!Number.isInteger(doy) || doy < 1 || doy > total) return null;
+  if(y === 1582n){
+    if(doy <= 277){
+      const m = doy <= 273 ? Math.floor((doy-1)/31)+1 : 10;
+      if(m < 10){
+        let rem = doy; for(let i=0;i<m-1;i++) rem -= GREG_COMMON[i];
+        return {m,d:rem};
+      }
+      return {m:10,d:doy-273};
+    }
+    if(doy <= 294) return {m:10,d:doy-273+10};
+    let rem = doy-294;
+    for(let m=11;m<=12;m++){ if(rem <= GREG_COMMON[m-1]) return {m,d:rem}; rem -= GREG_COMMON[m-1]; }
+  }
+  const ml = monthLengths(y);
+  let rem = doy;
+  for(let m=1;m<=12;m++){
+    if(rem <= ml[m-1]) return {m,d:rem};
+    rem -= ml[m-1];
+  }
+  return null;
+}
+
+/* ---------------------------------------------------------
+   Weekday engine
+   Uses exact Julian Day Number arithmetic rather than Date().
+   This works for arbitrarily large integer years and correctly
+   distinguishes Gregorian BCE, Julian dates, and the 1582 switch.
+
+   Weekday index: Monday=0 ... Sunday=6.
+--------------------------------------------------------- */
+function floorDiv(a,b){
+  let q=a/b;
+  const r=a%b;
+  if(r<0n) q-=1n;
+  return q;
+}
+function mod7(n){
+  const r=n%7n;
+  return Number(r<0n ? r+7n : r);
+}
+function jdnGregorian(y,m,d){
+  const M=BigInt(m), D=BigInt(d);
+  const a=floorDiv(14n-M,12n);
+  const yy=y+4800n-a;
+  const mm=M+12n*a-3n;
+  return D + floorDiv(153n*mm+2n,5n) + 365n*yy
+       + floorDiv(yy,4n) - floorDiv(yy,100n) + floorDiv(yy,400n) - 32045n;
+}
+function jdnJulian(y,m,d){
+  const M=BigInt(m), D=BigInt(d);
+  const a=floorDiv(14n-M,12n);
+  const yy=y+4800n-a;
+  const mm=M+12n*a-3n;
+  return D + floorDiv(153n*mm+2n,5n) + 365n*yy
+       + floorDiv(yy,4n) - 32083n;
+}
+function calendarSystemForDate(y,m,d){
+  if(y<=-45n) return "Proleptic Gregorian System";       // 46 BCE and earlier
+  if(y<=1581n) return "Julian System";                  // 45 BCE–1581 CE
+  if(y===1582n){
+    if(m===10 && d>=15) return "Gregorian System";
+    return "Julian System";
+  }
+  return "Gregorian System";
+}
+function weekdayIndex(y,m,d){
+  const sys=calendarSystemForDate(y,m,d);
+  const jdn=(sys==="Gregorian System" || sys==="Proleptic Gregorian System")
+    ? jdnGregorian(y,m,d)
+    : jdnJulian(y,m,d);
+  return mod7(jdn);
+}
+function jan1WeekdayIndex(y){
+  return weekdayIndex(y,1,1);
+}
+
+/* ---------------------------------------------------------
+   Date formatting
+--------------------------------------------------------- */
+function displayYear(era,mag){
+  return `${mag.toString()} ${era}`;
+}
+function fullDateText(era,mag,m,d){
+  return `${MONTHS[m-1]} ${d}, ${mag.toString()} ${era}`;
+}
+function setDayInputSafe(d){
+  refs.dayInput.value = String(d);
+}
+
+/* ---------------------------------------------------------
+   Calendar update
+--------------------------------------------------------- */
+let current = null;
+
+function seasonPairForDate(month,day){
+  // Teaching model uses the displayed equinox/solstice cycle.
+  // Equinoxes and solstices define opposite seasons in the two hemispheres.
+  let nh, sh;
+  if ((month===3 && day>=20) || month===4 || month===5 || (month===6 && day<=20)){
+    nh="Spring"; sh="Autumn";
+  } else if ((month===6 && day>=21) || month===7 || month===8 || (month===9 && day<=22)){
+    nh="Summer"; sh="Winter";
+  } else if ((month===9 && day>=23) || month===10 || month===11 || (month===12 && day<=20)){
+    nh="Autumn"; sh="Spring";
+  } else {
+    nh="Winter"; sh="Summer";
+  }
+  return {nh,sh};
+}
+
+function seasonEventHint(month,day){
+  const s=seasonPairForDate(month,day);
+  return `NH ${s.nh} • SH ${s.sh}`;
+}
+
+function updateCalendarFromInputs(options={}){
+  const era = refs.eraSelect.value;
+  const mag = toBigIntYear(refs.yearInput.value);
+  const m = Number(refs.monthSelect.value);
+  if(mag === null){
+    refs.dateStatus.textContent = "Enter a positive whole-number year.";
+    refs.doyValue.textContent = "—";
+    refs.weekdayValue.textContent = "—";
+    refs.daySlider.value = "1";
+    return;
+  }
+  let y = normalizeEra(era,mag);
+  const ml = monthLengths(y);
+  const maxVisualDay = (y === 1582n && m === 10) ? 31 : ml[m-1];
+
+  let d = Number.parseInt(refs.dayInput.value,10);
+  if(!Number.isFinite(d) || d < 1) d = 1;
+
+  // For 1582 October, the deleted dates are unavailable.
+  if(y === 1582n && m === 10 && d >= 5 && d <= 14) d = 15;
+  const actualMax = maxVisualDay;
+  if(d > actualMax) d = actualMax;
+
+  // For any month in the transition year, use source month profile.
+  if(!isValidMonthDay(y,m,d)){
+    d = Math.min(d, m === 10 ? 31 : ml[m-1]);
+    if(y === 1582n && m === 10 && d >=5 && d<=14) d=15;
+  }
+  setDayInputSafe(d);
+
+  const doy = dayOfYear(y,m,d);
+  const total = daysInYear(y);
+  const wd = weekdayIndex(y,m,d);
+  const janWd = jan1WeekdayIndex(y);
+  const leap = isLeapYear(y);
+  const system = calendarSystemForDate(y,m,d);
+
+  current = {era,mag,y,m,d,doy,total,wd,janWd,leap,system};
+
+  const seasons=seasonPairForDate(m,d);
+  refs.northernSeasonValue.textContent=seasons.nh;
+  refs.southernSeasonValue.textContent=seasons.sh;
+  refs.northernSeasonValue.title=`Northern Hemisphere: ${seasons.nh}`;
+  refs.southernSeasonValue.title=`Southern Hemisphere: ${seasons.sh}`;
+
+  // Slider always matches the actual compressed year.
+  refs.daySlider.min = "1";
+  refs.daySlider.max = String(total);
+  refs.daySlider.value = String(doy);
+  refs.daySlider.step = "1";
+  refs.daySlider.setAttribute("aria-valuemin", "1");
+  refs.daySlider.setAttribute("aria-valuemax", String(total));
+  refs.daySlider.setAttribute("aria-valuenow", String(doy));
+  refs.dayValue.textContent = `Day ${doy} / ${total}`;
+
+  // Display
+  refs.dateValue.textContent = fullDateText(era,mag,m,d);
+  refs.doyValue.textContent = `Day ${doy} / ${total}`;
+  refs.weekdayValue.textContent = WEEKDAYS[wd];
+  refs.yearTypeValue.textContent = y === 1582n ? "Transition Year" : (leap ? "Leap Year" : "Common Year");
+  refs.calendarSystemValue.textContent = system;
+  refs.monthDaysValue.textContent = `${m === 10 && y === 1582n ? 21 : ml[m-1]} calendar days`;
+  refs.remainingValue.textContent = String(total-doy);
+  refs.fullDateSummary.textContent = fullDateText(era,mag,m,d);
+  refs.jan1Summary.textContent = WEEKDAYS[janWd];
+  refs.monthDaySummary.textContent = `${d} / ${m === 10 && y === 1582n ? 21 : ml[m-1]}`;
+  refs.weekdayPosSummary.textContent = `${WEEKDAYS[wd]} • Day ${wd+1}`;
+
+  const eraNote = registryEraLabel(y);
+  refs.dateStatus.textContent =
+    `${displayYear(era,mag)} • Jan 1 ${WEEKDAYS[janWd]} • ` +
+    `${y===1582n ? "Transition Year" : (leap ? "Leap Year" : "Common Year")} • ${total} days • ${system} • ${eraNote}`;
+
+  if(!options.preserveSimulation){
+    simulationDay=Number(doy);
+  }
+  updateOrbit(options.preserveSimulation && Number.isFinite(simulationDay) ? simulationDay : doy,total);
+}
+
+/* Slider → date */
+refs.daySlider.addEventListener("input",()=>{
+  if(!current) return;
+  const doy = Number(refs.daySlider.value);
+  const dt = dateFromDOY(current.y,doy);
+  if(!dt) return;
+  refs.monthSelect.value = String(dt.m);
+  refs.dayInput.value = String(dt.d);
+  simulationDay=doy;
+  updateCalendarFromInputs();
+});
+function commitCalendarFields(){
+  // Normalize whitespace/commas and force a complete redraw of every label.
+  refs.yearInput.value = refs.yearInput.value.replace(/[^0-9]/g, "");
+  refs.dayInput.value = refs.dayInput.value.replace(/[^0-9]/g, "");
+  updateCalendarFromInputs();
+}
+
+refs.eraSelect.addEventListener("change", commitCalendarFields);
+refs.monthSelect.addEventListener("change", commitCalendarFields);
+refs.yearInput.addEventListener("input", () => {
+  // Update live while typing a complete numeric year, but never leave stale labels after Enter.
+  if (/^\d+$/.test(refs.yearInput.value.trim())) updateCalendarFromInputs();
+});
+refs.yearInput.addEventListener("change", commitCalendarFields);
+refs.dayInput.addEventListener("input", () => {
+  if (/^\d+$/.test(refs.dayInput.value.trim())) updateCalendarFromInputs();
+});
+refs.dayInput.addEventListener("change", commitCalendarFields);
+
+function calendarFieldEnter(event){
+  if(event.key !== "Enter") return;
+  event.preventDefault();
+  event.stopPropagation();
+  commitCalendarFields();
+  event.target.blur();
+}
+refs.yearInput.addEventListener("keydown", calendarFieldEnter);
+refs.dayInput.addEventListener("keydown", calendarFieldEnter);
+
+refs.eventSelect.addEventListener("change",()=>{
+  if(!refs.eventSelect.value) return;
+  const target = Number(refs.eventSelect.value);
+  refs.eraSelect.value = "CE";
+  refs.yearInput.value = "2026";
+  refs.daySlider.value = String(target);
+  simulationDay=target;
+  const dt = dateFromDOY(2026n,target);
+  refs.monthSelect.value = String(dt.m);
+  refs.dayInput.value = String(dt.d);
+  updateCalendarFromInputs();
+  refs.eventSelect.value = "";
+});
+
+/* =========================================================
+   ORBITAL VISUAL
+   Schematic annual mapping:
+   0° around March 20/21, then 90° June, 180° Sept,
+   270° Dec. This is a visualization mapping, not an
+   all-epochs ephemeris.
+========================================================= */
+
+const CENTER_X=600, CENTER_Y=280, RX=440, RY=205;
+const orbit = document.getElementById("orbit");
+const earthGroup = document.getElementById("earthGroup");
+const earthSpin = document.getElementById("earthSpin");
+const sunGroup = document.getElementById("sunGroup");
+const sunSurface = document.getElementById("sunSurface");
+const focus1 = document.getElementById("focus1");
+const focus2 = document.getElementById("focus2");
+const focus1Text = document.getElementById("focus1Text");
+const focus2Text = document.getElementById("focus2Text");
+const distanceLine = document.getElementById("distanceLine");
+const distanceRect = document.getElementById("distanceRect");
+const distanceText = document.getElementById("distanceText");
+const longitudeText = document.getElementById("longitudeText");
+const orbitalValue = refs.orbitalValue;
+const eventMarkers = document.getElementById("eventMarkers");
+
+function visualPosition(longitude){
+  const r=longitude*Math.PI/180;
+  return {x:CENTER_X+RX*Math.cos(r), y:CENTER_Y+RY*Math.sin(r)};
+}
+function setupFoci(){
+  const c=Math.sqrt(RX*RX-RY*RY);
+  const f1=CENTER_X-c, f2=CENTER_X+c;
+  focus1.setAttribute("cx",f1);focus1.setAttribute("cy",CENTER_Y);
+  focus2.setAttribute("cx",f2);focus2.setAttribute("cy",CENTER_Y);
+  focus1Text.setAttribute("x",f1);focus1Text.setAttribute("y",CENTER_Y-32);
+  focus2Text.setAttribute("x",f2);focus2Text.setAttribute("y",CENTER_Y-32);
+  sunGroup.setAttribute("transform",`translate(${f1},${CENTER_Y})`);
+}
+setupFoci();
+
+function actualDistanceAU(longitude){
+  const e=0.0167;
+  const peri=283;
+  const t=(longitude-peri)*Math.PI/180;
+  return (1-e*e)/(1+e*Math.cos(t));
+}
+const AU_KM=149.5978707;
+
+const EVENTS=[
+  {lon:283,name:"January Perihelion",month:"January",sub:"NH Winter • SH Summer",dx:72,dy:-42,anchor:"start"},
+  {lon:0,name:"March Equinox",month:"March",sub:"NH Spring • SH Autumn",dx:28,dy:-10,anchor:"start"},
+  {lon:90,name:"June Solstice",month:"June",sub:"NH Summer • SH Winter",dx:0,dy:52,anchor:"middle"},
+  {lon:103,name:"July Aphelion",month:"July",sub:"NH Summer • SH Winter",dx:-48,dy:42,anchor:"end"},
+  {lon:180,name:"September Equinox",month:"September",sub:"NH Autumn • SH Spring",dx:-28,dy:-10,anchor:"end"},
+  {lon:270,name:"December Solstice",month:"December",sub:"NH Winter • SH Summer",dx:0,dy:-42,anchor:"middle"}
+];
+function makeSvgEl(tag,attrs){
+  const e=document.createElementNS("http://www.w3.org/2000/svg",tag);
+  for(const [k,v] of Object.entries(attrs)) e.setAttribute(k,v);
+  return e;
+}
+function drawEvents(){
+  eventMarkers.innerHTML="";
+
+  const labels=[];
+  EVENTS.forEach(ev=>{
+    const p=visualPosition(ev.lon);
+
+    // Fixed-to-ellipse event point.
+    const marker=makeSvgEl("circle",{
+      cx:p.x,cy:p.y,r:5,
+      fill:(ev.name.includes("Aphelion")||ev.name.includes("Perihelion"))?"#f59e0b":"#94a3b8"
+    });
+    eventMarkers.appendChild(marker);
+
+    // Leader line keeps the label visibly anchored to the exact ellipse point.
+    const lx=p.x+ev.dx;
+    const ly=p.y+ev.dy;
+    const line=makeSvgEl("line",{
+      x1:p.x,y1:p.y,x2:lx,y2:ly,
+      stroke:"rgba(203,213,225,.55)","stroke-width":"1",
+      "stroke-linecap":"round"
+    });
+    eventMarkers.appendChild(line);
+
+    const group=makeSvgEl("g",{});
+    const text=makeSvgEl("text",{
+      x:lx,y:ly,
+      fill:(ev.name.includes("Aphelion")||ev.name.includes("Perihelion"))?"#fbbf24":"#cbd5e1",
+      "font-size":"12","font-weight":"700","text-anchor":ev.anchor,
+      "paint-order":"stroke","stroke":"#05070c","stroke-width":"4","stroke-linejoin":"round"
+    });
+    const title=makeSvgEl("tspan",{x:lx,dy:"0"});
+    title.textContent=ev.name;
+    const note=makeSvgEl("tspan",{x:lx,dy:"14",fill:"#94a3b8","font-size":"9","font-weight":"600"});
+    note.textContent=ev.sub;
+    text.appendChild(title); text.appendChild(note);
+    group.appendChild(text);
+    eventMarkers.appendChild(group);
+    labels.push({group,text,p,ev,lx,ly});
+  });
+
+  // Collision-safe pass: nudge labels vertically while preserving their
+  // leader-line connection to the ellipse. The event point never moves.
+  for(let pass=0; pass<8; pass++){
+    let changed=false;
+    for(let i=0;i<labels.length;i++){
+      const a=labels[i];
+      const ab=a.text.getBBox();
+      for(let j=0;j<i;j++){
+        const b=labels[j], bb=b.text.getBBox();
+        const overlap=ab.x < bb.x+bb.width && ab.x+ab.width > bb.x &&
+                      ab.y < bb.y+bb.height && ab.y+ab.height > bb.y;
+        if(overlap){
+          const direction=(a.ev.lon>=180? -1 : 1);
+          const shift=18*direction;
+          a.ly += shift;
+          a.text.setAttribute("y",a.ly);
+          a.text.querySelectorAll("tspan").forEach((t,idx)=>{
+            t.setAttribute("x",a.lx);
+            if(idx===0) t.setAttribute("dy","0");
+            else t.setAttribute("dy","14");
+          });
+          // update the leader line endpoint to the moved label
+          const line=a.group.previousSibling;
+          if(line && line.tagName.toLowerCase()==="line"){
+            line.setAttribute("x2",a.lx);
+            line.setAttribute("y2",a.ly);
+          }
+          changed=true;
+        }
+      }
+    }
+    if(!changed) break;
+  }
+}
+drawEvents();
+
+/* Full-screen / expand control for the orbital visual */
+function isVisualFullscreen(){
+  return document.fullscreenElement === refs.orbitStage;
+}
+function updateFullscreenButton(){
+  const active=isVisualFullscreen() || refs.orbitStage.classList.contains("isExpanded");
+  refs.fullscreenButton.setAttribute("aria-label",active?"Exit Full Screen":"Full Screen / Expand orbital visual");
+  refs.fullscreenButton.title=active?"Exit Full Screen":"Full Screen / Expand";
+  refs.fullscreenButton.textContent=active?"⛶":"⛶";
+}
+async function toggleVisualFullscreen(){
+  try{
+    if(isVisualFullscreen()){
+      await document.exitFullscreen();
+    }else if(refs.orbitStage.classList.contains("isExpanded")){
+      refs.orbitStage.classList.remove("isExpanded");
+    }else if(document.fullscreenEnabled && refs.orbitStage.requestFullscreen){
+      await refs.orbitStage.requestFullscreen();
+    }else{
+      refs.orbitStage.classList.add("isExpanded");
+    }
+  }catch(err){
+    refs.orbitStage.classList.toggle("isExpanded");
+  }
+  updateFullscreenButton();
+}
+refs.fullscreenButton.addEventListener("click",toggleVisualFullscreen);
+document.addEventListener("fullscreenchange",()=>{
+  if(document.fullscreenElement !== refs.orbitStage) refs.orbitStage.classList.remove("isExpanded");
+  updateFullscreenButton();
+});
+updateFullscreenButton();
+
+function updateOrbit(doy,total){
+  const fraction=(doy-1)/Math.max(1,total);
+  let lon=((fraction*360)-79+360)%360; // makes ≈ day 79–80 near 0°
+  const pos=visualPosition(lon);
+  const au=actualDistanceAU(lon);
+  const km=au*AU_KM;
+
+  earthGroup.setAttribute("transform",`translate(${pos.x},${pos.y})`);
+  const sunX=Number(focus1.getAttribute("cx"));
+  const sunY=Number(focus1.getAttribute("cy"));
+  distanceLine.setAttribute("x1",sunX);distanceLine.setAttribute("y1",sunY);
+  distanceLine.setAttribute("x2",pos.x);distanceLine.setAttribute("y2",pos.y);
+
+  let ly=pos.y+27;
+  if(ly>505) ly=pos.y-24;
+  distanceRect.setAttribute("x",pos.x-37);
+  distanceRect.setAttribute("y",ly-11);
+  distanceRect.setAttribute("width",74);
+  distanceRect.setAttribute("height",16);
+  distanceText.setAttribute("x",pos.x);distanceText.setAttribute("y",ly+1);
+  distanceText.textContent=`${km.toFixed(1)} M km`;
+
+  orbitalValue.textContent=`${lon.toFixed(1)}°`;
+  longitudeText.textContent=`Orbital Position (visual model): ${lon.toFixed(1)}° • ${km.toFixed(1)} M km`;
+
+  // Self rotation. Red axis remains tilted; surface rotates around axis.
+  earthSpin.dataset.spin = "1";
+}
+
+/* Continuous animation
+   Fractional speeds use an independent floating-point simulationDay.
+   The range input remains an integer calendar-day control, but the
+   orbital position continues moving between calendar days.
+*/
+let playing=false;
+let raf=null;
+let earthAngle=0;
+let sunAngle=0;
+let simulationDay=null;
+let lastTimestamp=null;
+
+function setSimulationDayFromCalendar(){
+  if(current) simulationDay=Number(current.doy);
+}
+
+function animate(timestamp){
+  if(!playing){
+    lastTimestamp=null;
+    return;
+  }
+
+  if(lastTimestamp===null) lastTimestamp=timestamp;
+  const frameScale=Math.min(3, Math.max(0, (timestamp-lastTimestamp)/16.6666667));
+  lastTimestamp=timestamp;
+
+  // Orbital time warp: 0.25, 0.5, 1, 2.5 or 5 calendar days per nominal frame.
+  simulationDay += Number(refs.speedSelect.value) * frameScale;
+
+  const total=Number(refs.daySlider.max);
+  if(simulationDay>total) simulationDay=1 + ((simulationDay-1) % total);
+
+  // Continuous fractional orbital motion.
+  updateOrbit(simulationDay,total);
+
+  // Calendar labels change only when the simulated day crosses an integer.
+  const displayDoy=Math.max(1,Math.min(total,Math.round(simulationDay)));
+  if(!current || displayDoy!==current.doy){
+    const dt=dateFromDOY(current.y,displayDoy);
+    if(dt){
+      refs.monthSelect.value=String(dt.m);
+      refs.dayInput.value=String(dt.d);
+      updateCalendarFromInputs({preserveSimulation:true});
+      updateOrbit(simulationDay,total);
+    }
+  }
+
+  // Keep the slider and visible Day X / total synchronized with the fractional simulation.
+  refs.daySlider.value=String(displayDoy);
+  refs.daySlider.setAttribute("aria-valuenow",String(displayDoy));
+  refs.dayValue.textContent=`Day ${displayDoy} / ${total}`;
+
+  // Self-rotation is independent of the orbital time-warp choice.
+  earthAngle=(earthAngle + 7.0*frameScale)%360;
+  sunAngle=(sunAngle + 0.9*frameScale)%360;
+  earthSpin.setAttribute("transform",`rotate(${earthAngle})`);
+  sunSurface.setAttribute("transform",`rotate(${sunAngle})`);
+
+  raf=requestAnimationFrame(animate);
+}
+
+refs.playButton.addEventListener("click",()=>{
+  playing=!playing;
+  refs.playButton.textContent=playing?"❚❚":"▶";
+  if(playing){
+    setSimulationDayFromCalendar();
+    lastTimestamp=null;
+    raf=requestAnimationFrame(animate);
+  }else if(raf){
+    cancelAnimationFrame(raf);
+    raf=null;
+    lastTimestamp=null;
+  }
+});
+
+/* Keyboard date stepping */
+document.addEventListener("keydown",e=>{
+  if(["INPUT","SELECT","TEXTAREA"].includes(document.activeElement.tagName) && e.code!=="Space") return;
+  if(e.key==="ArrowRight"||e.key==="ArrowLeft"){
+    e.preventDefault();
+    const delta=e.key==="ArrowRight"?1:-1;
+    const total=Number(refs.daySlider.max);
+    let next=Number(refs.daySlider.value)+delta;
+    if(next>total) next=1;
+    if(next<1) next=total;
+    refs.daySlider.value=String(next);
+    const dt=dateFromDOY(current.y,next);
+    refs.monthSelect.value=String(dt.m);
+    refs.dayInput.value=String(dt.d);
+    updateCalendarFromInputs();
+  }
+  if(e.code==="Space" && !["INPUT","SELECT","TEXTAREA"].includes(document.activeElement.tagName)){
+    e.preventDefault(); refs.playButton.click();
+  }
+});
+
+/* Initial exact example requested */
+updateCalendarFromInputs();
+</script>
+</body>
+</html>
